@@ -42,8 +42,8 @@ docker run -it crypto-lab
 
 | Thành viên | Nhiệm vụ |
 |------------|----------|
-| **Hưng** | Implement `caesar/cipher.py` + `caesar/attack.py`, viết lý thuyết Caesar trong báo cáo |
-| **Nguyễn Ánh Duy** (Trưởng nhóm) | Implement `vigenere/cipher.py` + `vigenere/attack.py`, viết lý thuyết Vigenère |
+| **Hưng** (Trưởng nhóm) | Implement `caesar/cipher.py` + `caesar/attack.py`, viết lý thuyết Caesar trong báo cáo |
+| **Nguyễn Ánh Duy** | Implement `vigenere/cipher.py` + `vigenere/attack.py`, viết lý thuyết Vigenère |
 | **Minh Hiếu** | Implement `playfair/cipher.py` + `playfair/attack.py` (phần khó nhất), viết lý thuyết Playfair |
 | **Cả 3** | Hoàn thiện `utils/frequency.py` và `utils/text_utils.py` (dùng chung), tạo Pull Request để merge vào `main` |
 
