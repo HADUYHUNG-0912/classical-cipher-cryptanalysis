@@ -1,0 +1,6 @@
+{
+  "_comment": "TODO: Điền bảng tần suất bigram tiếng Anh vào đây để dùng cho Playfair attack (hill-climbing).",
+  "_format": "Key là bigram 2 chữ cái (VD: 'TH'), value là tần suất tương đối (float).",
+  "_example": "{'TH': 3.56, 'HE': 3.07, 'IN': 2.43, ...}",
+  "_source": "Nguồn tham khảo: http://practicalcryptography.com/cryptanalysis/letter-frequencies-various-languages/english-letter-frequencies/"
+}
