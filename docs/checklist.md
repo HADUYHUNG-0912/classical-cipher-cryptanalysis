@@ -13,13 +13,13 @@
   - [ ] **Hưng**: Hoàn thiện `caesar/cipher.py` (`encrypt`/`decrypt`).
   - [ ] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/cipher.py` (`encrypt`/`decrypt`).
   - [ ] **Minh Hiếu**: Hoàn thiện `playfair/cipher.py` (`generate_key_square`, `encrypt`/`decrypt`).
-- [ ] **Dữ liệu tần suất**:
+- [x] **Dữ liệu tần suất**:
   - [x] Đã chuẩn bị `data/english_letter_freq.json` (tần suất chữ cái).
-  - [ ] Điền bảng tần suất bigram `data/english_bigram_freq.json`.
+  - [x] Đã điền bảng tần suất bigram `data/english_bigram_freq.json` (top 100 bigrams).
   - [x] Đã chuẩn bị `data/sample_corpus.txt` (văn bản mẫu test).
-- [ ] **Hàm tiện ích (`utils/`)**:
-  - [ ] Hoàn thiện `utils/text_utils.py` (`clean_text`, `read_file`, `write_file`).
-  - [ ] Hoàn thiện `utils/frequency.py` (`letter_frequency`, `chi_squared_score`, `index_of_coincidence`).
+- [x] **Hàm tiện ích (`utils/`)**:
+  - [x] Hoàn thiện `utils/text_utils.py` (`clean_text`, `read_file`, `write_file`).
+  - [x] Hoàn thiện `utils/frequency.py` (`letter_frequency`, `chi_squared_score`, `index_of_coincidence`, `bigram_frequency`, `bigram_log_score`).
 - [ ] **Thám mã bản đầu tiên (`attack.py`)**:
   - [ ] Viết bản thử nghiệm cho `caesar/attack.py` (chạy được với ciphertext ngắn, sạch).
 - [ ] **Deliverable cuối Tuần 1**: 3 module `cipher` hoạt động, ít nhất `caesar/attack.py` chạy được cơ bản.
