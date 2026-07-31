@@ -10,9 +10,9 @@
 - [x] Cài đặt Docker, VS Code, tạo GitHub repository và mời 2 thành viên vào repo.
 - [x] Chạy Agent setup cấu trúc thư mục & file khung theo [`SETUP.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/SETUP.md).
 - [ ] **Mã hóa / Giải mã cơ bản (`cipher.py`)**:
-  - [ ] Người A: Hoàn thiện `caesar/cipher.py` (`encrypt`/`decrypt`).
-  - [ ] Người B: Hoàn thiện `vigenere/cipher.py` (`encrypt`/`decrypt`).
-  - [ ] Người C: Hoàn thiện `playfair/cipher.py` (`generate_key_square`, `encrypt`/`decrypt`).
+  - [ ] **Hưng**: Hoàn thiện `caesar/cipher.py` (`encrypt`/`decrypt`).
+  - [ ] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/cipher.py` (`encrypt`/`decrypt`).
+  - [ ] **Minh Hiếu**: Hoàn thiện `playfair/cipher.py` (`generate_key_square`, `encrypt`/`decrypt`).
 - [ ] **Dữ liệu tần suất**:
   - [x] Đã chuẩn bị `data/english_letter_freq.json` (tần suất chữ cái).
   - [ ] Điền bảng tần suất bigram `data/english_bigram_freq.json`.
@@ -28,9 +28,9 @@
 
 ### 🔹 Tuần 2: Hoàn thiện Thuật toán Phá mã + Thực nghiệm
 - [ ] **Thuật toán phá mã nâng cao (`attack.py`)**:
-  - [ ] Hoàn thiện `caesar/attack.py` (Brute-force 25 khóa + Chi-squared).
-  - [ ] Hoàn thiện `vigenere/attack.py` (Kasiski / IC đoán key length + giải từng cột Caesar).
-  - [ ] Hoàn thiện `playfair/attack.py` (Hill-climbing / Simulated Annealing với Random Restart).
+  - [ ] **Hưng**: Hoàn thiện `caesar/attack.py` (Brute-force 25 khóa + Chi-squared).
+  - [ ] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/attack.py` (Kasiski / IC đoán key length + giải từng cột Caesar).
+  - [ ] **Minh Hiếu**: Hoàn thiện `playfair/attack.py` (Hill-climbing / Simulated Annealing với Random Restart).
 - [ ] **Thực nghiệm & Đo đạc chỉ số**:
   - [ ] Test với các độ dài ciphertext khác nhau (ngắn / trung bình / dài) để đo tỷ lệ giải mã đúng.
   - [ ] Test Vigenère với độ dài khóa khác nhau (ngắn / dài), ghi nhận độ chính xác của Kasiski/IC.
@@ -44,9 +44,9 @@
 
 ### 🔹 Tuần 3: Viết Báo cáo
 - [ ] **Báo cáo thành phần**:
-  - [ ] Người A: Viết phần lý thuyết + kết quả thực nghiệm Caesar vào [`docs/caesar_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/caesar_report.md).
-  - [ ] Người B: Viết phần lý thuyết + kết quả thực nghiệm Vigenère vào [`docs/vigenere_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/vigenere_report.md).
-  - [ ] Người C: Viết phần lý thuyết + kết quả thực nghiệm Playfair vào [`docs/playfair_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/playfair_report.md).
+  - [ ] **Hưng**: Viết phần lý thuyết + kết quả thực nghiệm Caesar vào [`docs/caesar_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/caesar_report.md).
+  - [ ] **Nguyễn Ánh Duy**: Viết phần lý thuyết + kết quả thực nghiệm Vigenère vào [`docs/vigenere_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/vigenere_report.md).
+  - [ ] **Minh Hiếu**: Viết phần lý thuyết + kết quả thực nghiệm Playfair vào [`docs/playfair_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/playfair_report.md).
 - [ ] **Báo cáo chung (Cả nhóm)**:
   - [ ] Viết phần Mục tiêu, Kịch bản thực nghiệm (Lab Docker), và Biện pháp phòng chống.
   - [ ] Tổng hợp ghép thành file báo cáo hoàn chỉnh [`docs/final_report.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/docs/final_report.md) theo 5 phần bắt buộc.

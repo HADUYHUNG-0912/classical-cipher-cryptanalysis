@@ -1,6 +1,6 @@
 # Báo cáo Lý thuyết & Thử nghiệm: Mật mã Playfair
 
-**Người thực hiện:** Người C
+**Người thực hiện:** Minh Hiếu
 
 ---
 

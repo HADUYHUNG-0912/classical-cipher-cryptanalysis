@@ -1,6 +1,6 @@
 # Báo cáo Lý thuyết & Thử nghiệm: Mật mã Vigenère
 
-**Người thực hiện:** Người B
+**Người thực hiện:** Nguyễn Ánh Duy
 
 ---
 
