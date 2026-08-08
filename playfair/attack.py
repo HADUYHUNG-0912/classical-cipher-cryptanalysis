@@ -1,19 +1,84 @@
-"""Thuật toán tự động phá mã Playfair — hill-climbing dùng tần suất bigram
-(khó nhất trong 3 hệ, không có phân tích tần suất đơn giản)."""
-from utils.frequency import chi_squared_score
+import random
+from playfair.cipher import decrypt, generate_key_square
+from utils.frequency import ENGLISH_BIGRAM_FREQ, bigram_log_score
+from utils.text_utils import clean_text
+
+ALPHABET_25 = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
 
 
-def score_key(plaintext_guess: str, bigram_freq_table: dict) -> float:
-    """TODO: chấm điểm 1 bảng khóa dựa trên độ khớp bigram với tiếng Anh chuẩn."""
-    pass
+def score_key(plaintext_guess: str, bigram_freq_table: dict = None) -> float:
+    
+    return bigram_log_score(plaintext_guess, bigram_freq_table)
 
 
-def break_playfair(ciphertext: str, iterations: int = 5000) -> tuple[str, str]:
-    """TODO (người phụ trách Playfair implement — phần khó nhất):
-    1. Khởi tạo 1 bảng khóa 5x5 ngẫu nhiên
-    2. Lặp: hoán đổi ngẫu nhiên 2 ký tự trong bảng, decrypt thử, chấm điểm bigram
-    3. Nếu điểm tốt hơn thì giữ, nếu không thì giữ nguyên (hill-climbing)
-    4. Lặp lại nhiều lần khởi tạo (random restart) để tránh local optimum
-    Trả về (plaintext, key_square_as_string)
-    """
-    pass
+def _mutate_key(key: str) -> str:
+    key_list = list(key)
+    choice = random.random()
+
+    if choice < 0.70:
+        # Swap 2 ký tự ngẫu nhiên
+        i, j = random.sample(range(25), 2)
+        key_list[i], key_list[j] = key_list[j], key_list[i]
+    elif choice < 0.85:
+        # Swap 2 hàng
+        r1, r2 = random.sample(range(5), 2)
+        for c in range(5):
+            key_list[r1 * 5 + c], key_list[r2 * 5 + c] = key_list[r2 * 5 + c], key_list[r1 * 5 + c]
+    elif choice < 0.95:
+        # Swap 2 cột
+        c1, c2 = random.sample(range(5), 2)
+        for r in range(5):
+            key_list[r * 5 + c1], key_list[r * 5 + c2] = key_list[r * 5 + c2], key_list[r * 5 + c1]
+    else:
+        # Đảo ngược bảng khóa
+        key_list.reverse()
+
+    return "".join(key_list)
+
+
+def break_playfair(
+    ciphertext: str,
+    iterations: int = 3000,
+    restarts: int = 10,
+    bigram_table: dict = None
+) -> tuple[str, str]:
+    cleaned_cipher = clean_text(ciphertext).replace('J', 'I')
+    if not cleaned_cipher:
+        return "", ALPHABET_25
+
+    if bigram_table is None:
+        bigram_table = ENGLISH_BIGRAM_FREQ
+
+    best_global_score = float('-inf')
+    best_global_key = ALPHABET_25
+    best_global_plaintext = ""
+
+    # Thực hiện các đợt Random Restart
+    for _ in range(restarts):
+        # Khởi tạo khóa ngẫu nhiên
+        current_key_chars = list(ALPHABET_25)
+        random.shuffle(current_key_chars)
+        current_key = "".join(current_key_chars)
+
+        current_plain = decrypt(cleaned_cipher, current_key)
+        current_score = score_key(current_plain, bigram_table)
+
+        # Lặp leo đồi (Hill-climbing)
+        for _ in range(iterations):
+            neighbor_key = _mutate_key(current_key)
+            neighbor_plain = decrypt(cleaned_cipher, neighbor_key)
+            neighbor_score = score_key(neighbor_plain, bigram_table)
+
+            if neighbor_score > current_score:
+                current_score = neighbor_score
+                current_key = neighbor_key
+                current_plain = neighbor_plain
+
+        # Cập nhật kết quả tốt nhất toàn cục
+        if current_score > best_global_score:
+            best_global_score = current_score
+            best_global_key = current_key
+            best_global_plaintext = current_plain
+
+    return best_global_plaintext, best_global_key
+
