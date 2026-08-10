@@ -38,8 +38,8 @@ def test_encrypt_decrypt_roundtrip():
 
 
 def test_break_caesar_simple():
-    """Kiểm tra phá mã với shift nhỏ."""
-    original = "THEQUICKBROWNFOX"
+    """Kiểm tra phá mã với shift nhỏ (dùng văn bản đủ dài để tần suất ổn định)."""
+    original = "THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG"
     key = 3
     ciphertext = encrypt(original, key)
     plaintext, found_key = break_caesar(ciphertext)
