@@ -1,4 +1,11 @@
 """CLI menu chính — chọn hệ mật mã để phá."""
+import sys
+
+# Fix BUG-1: Buộc stdout dùng UTF-8 để in tiếng Việt trên Windows CMD/PowerShell
+# mà không bị UnicodeEncodeError.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from caesar.attack import break_caesar
 from vigenere.attack import break_vigenere
 from playfair.attack import break_playfair

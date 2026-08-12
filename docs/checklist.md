@@ -28,16 +28,16 @@
 
 ### 🔹 Tuần 2: Hoàn thiện Thuật toán Phá mã + Thực nghiệm
 - [ ] **Thuật toán phá mã nâng cao (`attack.py`)**:
-  - [ ] **Hưng**: Hoàn thiện `caesar/attack.py` (Brute-force 25 khóa + Chi-squared).
+  - [x] **Hưng**: Hoàn thiện `caesar/attack.py` (Brute-force 25 khóa + Chi-squared).
   - [ ] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/attack.py` (Kasiski / IC đoán key length + giải từng cột Caesar).
   - [ ] **Minh Hiếu**: Hoàn thiện `playfair/attack.py` (Hill-climbing / Simulated Annealing với Random Restart).
 - [ ] **Thực nghiệm & Đo đạc chỉ số**:
   - [ ] Test với các độ dài ciphertext khác nhau (ngắn / trung bình / dài) để đo tỷ lệ giải mã đúng.
   - [ ] Test Vigenère với độ dài khóa khác nhau (ngắn / dài), ghi nhận độ chính xác của Kasiski/IC.
   - [ ] Thu thập số liệu, thời gian chạy và vẽ biểu đồ (% thành công, thời gian giải mã).
-- [ ] **Đóng gói Docker**:
-  - [ ] Đóng gói toàn bộ dự án vào Docker với `Dockerfile`.
-  - [ ] Test chạy thành công bằng `docker build -t crypto-lab .` và `docker run -it crypto-lab`.
+- [x] **Đóng gói Docker**:
+  - [x] Đóng gói toàn bộ dự án vào Docker với `Dockerfile`.
+  - [x] Test chạy thành công bằng `docker build -t crypto-lab .` và `docker run -it crypto-lab`.
 - [ ] **Deliverable cuối Tuần 2**: Toàn bộ 3 module attack hoạt động ổn định trong Docker, có số liệu thực nghiệm đầy đủ.
 
 ---
