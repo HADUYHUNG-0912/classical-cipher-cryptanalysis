@@ -37,6 +37,27 @@ def _mutate_key(key: str) -> str:
     return "".join(key_list)
 
 
+def _fast_decrypt_pairs(cipher_pairs: list[tuple[str, str]], key_str: str) -> str:
+    """Tốc độ cao: Giải mã trực tiếp từ danh sách cặp ký tự và chuỗi khóa 25 ký tự."""
+    pos_map = {ch: i for i, ch in enumerate(key_str)}
+    res = []
+    for c1, c2 in cipher_pairs:
+        idx1 = pos_map[c1]
+        idx2 = pos_map[c2]
+        r1, col1 = divmod(idx1, 5)
+        r2, col2 = divmod(idx2, 5)
+        if r1 == r2:
+            res.append(key_str[r1 * 5 + (col1 - 1) % 5])
+            res.append(key_str[r2 * 5 + (col2 - 1) % 5])
+        elif col1 == col2:
+            res.append(key_str[((r1 - 1) % 5) * 5 + col1])
+            res.append(key_str[((r2 - 1) % 5) * 5 + col2])
+        else:
+            res.append(key_str[r1 * 5 + col2])
+            res.append(key_str[r2 * 5 + col1])
+    return "".join(res)
+
+
 def break_playfair(
     ciphertext: str,
     iterations: int = 10000,
@@ -59,6 +80,12 @@ def break_playfair(
     if not cleaned_cipher:
         return "", ALPHABET_25
 
+    if len(cleaned_cipher) % 2 != 0:
+        cleaned_cipher += 'X'
+
+    # Tiền xử lý tách cặp cipher một lần duy nhất cho toàn bộ quá trình thám mã
+    cipher_pairs = [(cleaned_cipher[i], cleaned_cipher[i + 1]) for i in range(0, len(cleaned_cipher), 2)]
+
     if bigram_table is None:
         bigram_table = ENGLISH_BIGRAM_FREQ
 
@@ -77,7 +104,7 @@ def break_playfair(
         random.shuffle(current_key_chars)
         current_key = "".join(current_key_chars)
 
-        current_plain = decrypt(cleaned_cipher, current_key)
+        current_plain = _fast_decrypt_pairs(cipher_pairs, current_key)
         current_score = score_key(current_plain, bigram_table)
 
         best_restart_score = current_score
@@ -90,7 +117,7 @@ def break_playfair(
             temp = temp_start * ((temp_end / temp_start) ** (step_i / iterations))
 
             neighbor_key = _mutate_key(current_key)
-            neighbor_plain = decrypt(cleaned_cipher, neighbor_key)
+            neighbor_plain = _fast_decrypt_pairs(cipher_pairs, neighbor_key)
             neighbor_score = score_key(neighbor_plain, bigram_table)
 
             delta = neighbor_score - current_score
