@@ -151,15 +151,16 @@ def bigram_frequency(text: str) -> dict:
     return {bigram: (count / total_bigrams) * 100 for bigram, count in counts.items()}
 
 
-def bigram_log_score(text: str, bigram_table: dict = None) -> float:
+def bigram_log_score(text: str, bigram_table: dict = None, step: int = 1) -> float:
     """Chấm điểm văn bản dựa trên log-likelihood của bigram frequency.
 
-    Dùng cho Playfair attack (thay thế chi-squared cho bigram).
+    Dùng cho Playfair attack (non-overlapping digraphs khi step=2) hoặc Vigenère.
     Điểm càng CAO thì văn bản càng GIỐNG tiếng Anh (ngược với chi-squared).
 
     Args:
         text: Văn bản cần đánh giá.
         bigram_table: Bảng tần suất bigram tham chiếu. Nếu None thì dùng bảng mặc định.
+        step: Bước nhảy khi đọc cặp ký tự (1 cho overlapping bigram, 2 cho non-overlapping digraph).
 
     Returns:
         Tổng log-likelihood score (float âm, gần 0 hơn = tốt hơn).
@@ -172,7 +173,7 @@ def bigram_log_score(text: str, bigram_table: dict = None) -> float:
     score = 0.0
     floor_prob = 0.01  # xác suất tối thiểu cho bigram không có trong bảng
 
-    for i in range(len(text) - 1):
+    for i in range(0, len(text) - 1, step):
         bigram = text[i:i+2]
         prob = bigram_table.get(bigram, floor_prob)
         score += math.log10(prob / 100.0)  # chuyển % → xác suất rồi lấy log
