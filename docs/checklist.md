@@ -9,10 +9,10 @@
 ### 🔹 Tuần 1: Setup + Code Cơ bản
 - [x] Cài đặt Docker, VS Code, tạo GitHub repository và mời 2 thành viên vào repo.
 - [x] Chạy Agent setup cấu trúc thư mục & file khung theo [`SETUP.md`](file:///e:/An%20toàn%20TT/project/classical-cipher-cryptanalysis/SETUP.md).
-- [ ] **Mã hóa / Giải mã cơ bản (`cipher.py`)**:
-  - [ ] **Hưng**: Hoàn thiện `caesar/cipher.py` (`encrypt`/`decrypt`).
-  - [ ] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/cipher.py` (`encrypt`/`decrypt`).
-  - [ ] **Minh Hiếu**: Hoàn thiện `playfair/cipher.py` (`generate_key_square`, `encrypt`/`decrypt`).
+- [x] **Mã hóa / Giải mã cơ bản (`cipher.py`)**:
+  - [x] **Hưng**: Hoàn thiện `caesar/cipher.py` (`encrypt`/`decrypt`).
+  - [x] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/cipher.py` (`encrypt`/`decrypt`).
+  - [x] **Minh Hiếu**: Hoàn thiện `playfair/cipher.py` (`generate_key_square`, `encrypt`/`decrypt`).
 - [x] **Dữ liệu tần suất**:
   - [x] Đã chuẩn bị `data/english_letter_freq.json` (tần suất chữ cái).
   - [x] Đã điền bảng tần suất bigram `data/english_bigram_freq.json` (top 100 bigrams).
@@ -20,25 +20,25 @@
 - [x] **Hàm tiện ích (`utils/`)**:
   - [x] Hoàn thiện `utils/text_utils.py` (`clean_text`, `read_file`, `write_file`).
   - [x] Hoàn thiện `utils/frequency.py` (`letter_frequency`, `chi_squared_score`, `index_of_coincidence`, `bigram_frequency`, `bigram_log_score`).
-- [ ] **Thám mã bản đầu tiên (`attack.py`)**:
-  - [ ] Viết bản thử nghiệm cho `caesar/attack.py` (chạy được với ciphertext ngắn, sạch).
-- [ ] **Deliverable cuối Tuần 1**: 3 module `cipher` hoạt động, ít nhất `caesar/attack.py` chạy được cơ bản.
+- [x] **Thám mã bản đầu tiên (`attack.py`)**:
+  - [x] Viết bản thử nghiệm cho `caesar/attack.py` (chạy được với ciphertext ngắn, sạch).
+- [x] **Deliverable cuối Tuần 1**: 3 module `cipher` hoạt động, ít nhất `caesar/attack.py` chạy được cơ bản.
 
 ---
 
 ### 🔹 Tuần 2: Hoàn thiện Thuật toán Phá mã + Thực nghiệm
-- [ ] **Thuật toán phá mã nâng cao (`attack.py`)**:
-  - [x] **Hưng**: Hoàn thiện `caesar/attack.py` (Brute-force 25 khóa + Chi-squared).
-  - [ ] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/attack.py` (Kasiski / IC đoán key length + giải từng cột Caesar).
-  - [ ] **Minh Hiếu**: Hoàn thiện `playfair/attack.py` (Hill-climbing / Simulated Annealing với Random Restart).
-- [ ] **Thực nghiệm & Đo đạc chỉ số**:
-  - [ ] Test với các độ dài ciphertext khác nhau (ngắn / trung bình / dài) để đo tỷ lệ giải mã đúng.
-  - [ ] Test Vigenère với độ dài khóa khác nhau (ngắn / dài), ghi nhận độ chính xác của Kasiski/IC.
-  - [ ] Thu thập số liệu, thời gian chạy và vẽ biểu đồ (% thành công, thời gian giải mã).
+- [x] **Thuật toán phá mã nâng cao (`attack.py`)**:
+  - [x] **Hưng**: Hoàn thiện `caesar/attack.py` (Brute-force 25 khóa + Chi-squared) — 8 test pass.
+  - [x] **Nguyễn Ánh Duy**: Hoàn thiện `vigenere/attack.py` (IC ước lượng key length + bigram_log_score chọn kết quả tối ưu) — 5 test pass.
+  - [x] **Minh Hiếu**: Hoàn thiện `playfair/attack.py` (**Simulated Annealing** + non-overlapping digraph + Random Restart) — 6 test pass.
+- [x] **Thực nghiệm & Đo đạc chỉ số**:
+  - [x] Test Caesar với L = 50/100/500/1000 — kết quả lưu tại `experiments/results/caesar_results.csv`.
+  - [x] Test Vigenère theo key length × L — kết quả lưu tại `experiments/results/vigenere_ic_detailed_results.csv`.
+  - [x] Test Playfair theo L và iterations — có biểu đồ trong `experiments/results/`.
 - [x] **Đóng gói Docker**:
   - [x] Đóng gói toàn bộ dự án vào Docker với `Dockerfile`.
   - [x] Test chạy thành công bằng `docker build -t crypto-lab .` và `docker run -it crypto-lab`.
-- [ ] **Deliverable cuối Tuần 2**: Toàn bộ 3 module attack hoạt động ổn định trong Docker, có số liệu thực nghiệm đầy đủ.
+- [x] **Deliverable cuối Tuần 2**: Toàn bộ 3 module attack hoạt động ổn định — **19/19 test pass**, có số liệu thực nghiệm Caesar + Vigenère + Playfair ✅.
 
 ---
 
@@ -118,8 +118,8 @@
 
 ## ⚠️ 4. Quản lý Rủi ro & Lưu ý Kỹ thuật
 
-- [ ] **Rủi ro Playfair attack mắc kẹt ở Cực trị Địa phương (Local Optimum)**:
-  - *Giải pháp*: Triển khai kỹ thuật **Random Restart** lặp lại nhiều lần (ví dụ: 5.000 - 10.000 iterations). Cần tiến hành code phần này sớm từ Tuần 1 - 2.
+- [x] **Rủi ro Playfair attack mắc kẹt ở Cực trị Địa phương (Local Optimum)**:
+  - *Giải pháp*: Đã triển khai **Simulated Annealing** (nhiệt độ 20→0.05, 10000 iter × 10 restart) + non-overlapping digraph scoring — ✅ Hoàn thành (P1).
 - [ ] **Rủi ro Ciphertext quá ngắn**:
   - *Giải pháp*: Phân tích tần suất cần đủ dữ liệu. Cần thử nghiệm kiểm chứng với nhiều mức độ dài văn bản ($L = 50, 100, 500, 1000$ ký tự) để rút ra ngưỡng tối thiểu.
 - [ ] **Rủi ro Thao tác Docker lúng túng khi Demo**:
@@ -129,7 +129,7 @@
 
 ## 📋 5. Checklist Nộp Bài Cuối Cùng (Final Verification)
 
-- [ ] **Code**: Đầy đủ 3 module, chạy ổn định, không lỗi, đã đóng gói chạy tốt trong Docker container.
+- [x] **Code**: Đầy đủ 3 module, chạy ổn định, **19/19 test pass**, đã đóng gói chạy tốt trong Docker container ✅.
 - [ ] **Báo cáo**: Đầy đủ 5 phần bắt buộc, đúng định dạng Markdown/Word/PDF theo yêu cầu.
 - [ ] **Slide**: Đạt từ 25 - 40 slide, đúng mẫu UTH, chuẩn size chữ (Tiêu đề 32, Nội dung 26).
 - [ ] **Demo**: Sẵn sàng kịch bản demo trực tiếp với Docker và ciphertext mẫu.
