@@ -1,3 +1,4 @@
+import math
 import random
 from playfair.cipher import decrypt, generate_key_square
 from utils.frequency import ENGLISH_BIGRAM_FREQ, bigram_log_score
@@ -7,8 +8,8 @@ ALPHABET_25 = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
 
 
 def score_key(plaintext_guess: str, bigram_freq_table: dict = None) -> float:
-    
-    return bigram_log_score(plaintext_guess, bigram_freq_table)
+    """Chấm điểm văn bản bằng non-overlapping digraphs"""
+    return bigram_log_score(plaintext_guess, bigram_freq_table, step=2)
 
 
 def _mutate_key(key: str) -> str:
@@ -36,15 +37,54 @@ def _mutate_key(key: str) -> str:
     return "".join(key_list)
 
 
+def _fast_decrypt_pairs(cipher_pairs: list[tuple[str, str]], key_str: str) -> str:
+    """Tốc độ cao: Giải mã trực tiếp từ danh sách cặp ký tự và chuỗi khóa 25 ký tự."""
+    pos_map = {ch: i for i, ch in enumerate(key_str)}
+    res = []
+    for c1, c2 in cipher_pairs:
+        idx1 = pos_map[c1]
+        idx2 = pos_map[c2]
+        r1, col1 = divmod(idx1, 5)
+        r2, col2 = divmod(idx2, 5)
+        if r1 == r2:
+            res.append(key_str[r1 * 5 + (col1 - 1) % 5])
+            res.append(key_str[r2 * 5 + (col2 - 1) % 5])
+        elif col1 == col2:
+            res.append(key_str[((r1 - 1) % 5) * 5 + col1])
+            res.append(key_str[((r2 - 1) % 5) * 5 + col2])
+        else:
+            res.append(key_str[r1 * 5 + col2])
+            res.append(key_str[r2 * 5 + col1])
+    return "".join(res)
+
+
 def break_playfair(
     ciphertext: str,
-    iterations: int = 3000,
+    iterations: int = 10000,
     restarts: int = 10,
     bigram_table: dict = None
 ) -> tuple[str, str]:
+    """Phá mã Playfair tự động 
+    bằng Simulated Annealing kết hợp Random Restart.
+
+    Args:
+        ciphertext: Văn bản mật mã.
+        iterations: Số vòng lặp annealing cho mỗi lần restart (mặc định 10000).
+        restarts: Số lần khởi tạo ngẫu nhiên (mặc định 10).
+        bigram_table: Bảng tần suất bigram tham chiếu.
+
+    Returns:
+        Tuple (plaintext_đoán_được, key_đoán_được)
+    """
     cleaned_cipher = clean_text(ciphertext).replace('J', 'I')
     if not cleaned_cipher:
         return "", ALPHABET_25
+
+    if len(cleaned_cipher) % 2 != 0:
+        cleaned_cipher += 'X'
+
+    # Tiền xử lý tách cặp cipher một lần duy nhất cho toàn bộ quá trình thám mã
+    cipher_pairs = [(cleaned_cipher[i], cleaned_cipher[i + 1]) for i in range(0, len(cleaned_cipher), 2)]
 
     if bigram_table is None:
         bigram_table = ENGLISH_BIGRAM_FREQ
@@ -53,6 +93,10 @@ def break_playfair(
     best_global_key = ALPHABET_25
     best_global_plaintext = ""
 
+    # Tham số Simulated Annealing
+    temp_start = 20.0
+    temp_end = 0.05
+
     # Thực hiện các đợt Random Restart
     for _ in range(restarts):
         # Khởi tạo khóa ngẫu nhiên
@@ -60,25 +104,41 @@ def break_playfair(
         random.shuffle(current_key_chars)
         current_key = "".join(current_key_chars)
 
-        current_plain = decrypt(cleaned_cipher, current_key)
+        current_plain = _fast_decrypt_pairs(cipher_pairs, current_key)
         current_score = score_key(current_plain, bigram_table)
 
-        # Lặp leo đồi (Hill-climbing)
-        for _ in range(iterations):
+        best_restart_score = current_score
+        best_restart_key = current_key
+        best_restart_plain = current_plain
+
+        # Vòng lặp Luyện kim Mô phỏng (Simulated Annealing)
+        for step_i in range(1, iterations + 1):
+            # Tính nhiệt độ giảm dần theo thời gian
+            temp = temp_start * ((temp_end / temp_start) ** (step_i / iterations))
+
             neighbor_key = _mutate_key(current_key)
-            neighbor_plain = decrypt(cleaned_cipher, neighbor_key)
+            neighbor_plain = _fast_decrypt_pairs(cipher_pairs, neighbor_key)
             neighbor_score = score_key(neighbor_plain, bigram_table)
 
-            if neighbor_score > current_score:
+            delta = neighbor_score - current_score
+
+            # Chấp nhận bước chuyển nếu tốt hơn, hoặc kém hơn với xác suất p = exp(delta / temp)
+            if delta > 0 or math.exp(delta / temp) > random.random():
                 current_score = neighbor_score
                 current_key = neighbor_key
                 current_plain = neighbor_plain
 
+                # Theo dõi trạng thái tốt nhất trong đợt restart này
+                if current_score > best_restart_score:
+                    best_restart_score = current_score
+                    best_restart_key = current_key
+                    best_restart_plain = current_plain
+
         # Cập nhật kết quả tốt nhất toàn cục
-        if current_score > best_global_score:
-            best_global_score = current_score
-            best_global_key = current_key
-            best_global_plaintext = current_plain
+        if best_restart_score > best_global_score:
+            best_global_score = best_restart_score
+            best_global_key = best_restart_key
+            best_global_plaintext = best_restart_plain
 
     return best_global_plaintext, best_global_key
 
