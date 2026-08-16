@@ -74,7 +74,10 @@ def break_vigenere(ciphertext: str) -> tuple[str, str]:
             shift_scores.append((dot, shift))
 
         shift_scores.sort(reverse=True)
-        candidate_shifts_per_stream.append([s[1] for s in shift_scores[:5]])
+        top_shifts = [shift_scores[0][1]]
+        if len(shift_scores) > 1 and (shift_scores[0][0] - shift_scores[1][0] < 0.5):
+            top_shifts.append(shift_scores[1][1])
+        candidate_shifts_per_stream.append(top_shifts)
 
     best_overall_score = -float('inf')
     best_key = ''
