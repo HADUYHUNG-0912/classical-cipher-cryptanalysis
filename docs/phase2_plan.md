@@ -1,6 +1,6 @@
 # 📋 KẾ HOẠCH GIAI ĐOẠN 2 (PHASE 2) — Cryptanalysis Toolkit
 
-> **Người lập:** Hưng (Trưởng nhóm) · **Trạng thái:** Khởi tạo · **Cập nhật:** 10/08/2026
+> **Người lập:** Hưng (Trưởng nhóm) · **Trạng thái:** Đang thực hiện · **Cập nhật:** 16/08/2026
 > File này bổ sung cho [`docs/checklist.md`](./checklist.md) — tập trung vào phần việc **còn lại sau khi code hoàn tất**.
 
 ---
@@ -10,9 +10,9 @@
 ### ✅ Phase 1 — ĐÃ HOÀN THÀNH (đã merge vào `main`, đồng bộ remote)
 - Cấu trúc dự án, `utils/` (frequency, text_utils), dữ liệu tần suất `data/`
 - 3 module mã hóa + thám mã, có docstring + unit tests:
-  - **Caesar** — brute-force 25 khóa + Chi-squared ✅ (8/8 test pass)
-  - **Vigenère** — IC ước lượng key length + phá từng cột ✅ (5/5 test pass)
-  - **Playfair** — Hill-climbing + Random Restart ✅ (5/5 test pass, chạy không lỗi)
+  - **Caesar** — brute-force 25 khóa + Chi-squared ✅ (8/8 test pass → nâng lên 8 test chuẩn unittest)
+  - **Vigenère** — IC ước lượng key length + phá từng cột ✅ (5/5 test pass, chuẩn hóa unittest.TestCase)
+  - **Playfair** — Hill-climbing + Random Restart ✅ → nâng cấp lên **Simulated Annealing + non-overlapping digraph** (6/6 test pass)
 - Dockerfile, `main.py` (CLI), 5 file báo cáo mẫu
 
 ### 🎯 Phase 2 — Mục tiêu
@@ -25,11 +25,11 @@ thực nghiệm + số liệu, Docker ổn định, báo cáo 5 phần, slide th
 
 | # | Vấn đề | Mức độ | Người phụ trách |
 |---|--------|--------|-----------------|
-| 1 | `python main.py` **crash trên console Windows** — lỗi `UnicodeEncodeError` (chữ tiếng Việt, encoding cp1252) | 🔴 Cao (demo local) | Hưng |
-| 2 | **Playfair attack chưa đủ mạnh** — không tìm ra khóa với văn bản 400 ký tự (400 iterations × 3 restarts). Nghi do chấm điểm bigram *chồng lấp* thay vì theo cặp digraph + iterations thấp | 🔴 Cao (đây là phần khó nhất của đồ án) | Hiếu |
-| 3 | **Test Caesar & Vigenère không chạy bằng `python -m unittest`** (viết hàm thường, không phải `unittest.TestCase`) → test suite chưa chuẩn hóa | 🟠 Trung bình | Hưng (hoặc Duy) |
+| 1 | ~~`python main.py` **crash trên console Windows** — lỗi `UnicodeEncodeError`~~ | ✅ Đã fix (H1) | Hưng |
+| 2 | ~~**Playfair attack chưa đủ mạnh** — bigram chồng lấp + iterations thấp~~ | ✅ Đã fix: SA + non-overlapping digraph, 10000 iter × 10 restart (P1) | Hiếu |
+| 3 | ~~**Test Caesar & Vigenère không chạy bằng `python -m unittest`**~~ | ✅ Đã fix: chuẩn hóa toàn bộ sang `unittest.TestCase` — 19 test pass (D2) | Duy |
 | 4 | **Ciphertext quá ngắn → phá mã sai** (vd: `KHOOR ZRUOG` → key 6 thay vì 3) | 🟡 Đã biết (giới hạn tần suất) | Cả nhóm — ghi vào báo cáo |
-| 5 | **Docker daemon chưa chạy** (đã cài v29.6.2) → chưa test `docker build` | 🟠 Trung bình | Hưng |
+| 5 | ~~**Docker daemon chưa chạy**~~ | ✅ Đã fix (H4) | Hưng |
 
 ---
 
@@ -50,16 +50,16 @@ thực nghiệm + số liệu, Docker ổn định, báo cáo 5 phần, slide th
 
 | # | Nhiệm vụ | Deliverable | Deadline |
 |---|----------|-------------|----------|
-| D1 | Thực nghiệm **Vigenère**: key length 2→10 × độ dài L = 50/100/500/1000 → đo độ chính xác của IC khi ước lượng key length và tỷ lệ phá đúng | Bảng số liệu + biểu đồ | Tuần 2 |
-| D2 | Chuẩn hóa `tests/test_vigenere.py` thành `unittest.TestCase` (để `python -m unittest` chạy được) | Test suite chuẩn | Tuần 2 |
+| ✅ D1 | Thực nghiệm **Vigenère**: IC theo key length × L → `experiments/run_vigenere_eval.py` + `vigenere_ic_detailed_results.csv` + 2 biểu đồ | Bảng số liệu + biểu đồ ✅ | Tuần 2 |
+| ✅ D2 | Chuẩn hóa `tests/test_vigenere.py` + `tests/test_caesar.py` thành `unittest.TestCase` — 19/19 test pass | Test suite chuẩn ✅ | Tuần 2 |
 | D3 | Điền kết quả thực nghiệm vào `docs/vigenere_report.md` (mục 3) | Báo cáo Vigenère hoàn chỉnh | Tuần 3 |
 
 ### 👤 Minh Hiếu — Playfair (ưu tiên cao nhất)
 
 | # | Nhiệm vụ | Deliverable | Deadline |
 |---|----------|-------------|----------|
-| P1 | **Cải thiện `playfair/attack.py`**: ① chấm điểm theo **non-overlapping digraph** (đúng bản chất Playfair mã hóa theo cặp) thay vì bigram chồng lấp; ② tăng `iterations` (vd 5000–10000) & `restarts`; ③ thử thêm **simulated annealing** (chấp nhận bước xấu với xác suất giảm dần) để thoát local optimum | Attack phá được văn bản thực nghiệm (≥ 200 ký tự) | Tuần 2 |
-| P2 | Thực nghiệm **Playfair**: tỷ lệ thành công theo L (100/200/500/1000) và theo iterations | Bảng số liệu + biểu đồ | Tuần 2 |
+| ✅ P1 | **Cải thiện `playfair/attack.py`**: ① non-overlapping digraph scoring; ② 10000 iter × 10 restart; ③ **Simulated Annealing** (temp 20→0.05) + `_fast_decrypt_pairs` tối ưu tốc độ | Attack phá được văn bản ≥ 200 ký tự ✅ (6/6 test pass) | Tuần 2 |
+| ✅ P2 | Thực nghiệm **Playfair**: `experiments/eval_iterations_length` — tỷ lệ thành công theo L và iterations, có biểu đồ | Bảng số liệu + biểu đồ ✅ | Tuần 2 |
 | P3 | Điền kết quả thực nghiệm vào `docs/playfair_report.md` (mục 3) | Báo cáo Playfair hoàn chỉnh | Tuần 3 |
 
 ### 👥 Cả nhóm
@@ -88,10 +88,10 @@ thực nghiệm + số liệu, Docker ổn định, báo cáo 5 phần, slide th
 
 ## 5. Tiêu chí chấp nhận (Definition of Done)
 
-- [ ] `main.py` chạy được trên Windows local **và** trong Docker (đủ 3 menu, không crash)
-- [ ] Playfair attack tìm lại đúng plaintext với văn bản ≥ 200 ký tự (tối thiểu ở mức thực nghiệm)
-- [ ] `python -m unittest discover -s tests` chạy được **toàn bộ** 3 module (≥ 15 test) — cần chuẩn hóa test Caesar & Vigenère
-- [ ] `experiments/` có script benchmark + bảng số liệu (tỷ lệ % theo L, thời gian TB) cho từng module
+- [x] `main.py` chạy được trên Windows local **và** trong Docker (đủ 3 menu, không crash) — H1 ✅
+- [x] Playfair attack tìm lại đúng plaintext với văn bản ≥ 200 ký tự — Simulated Annealing (P1) ✅
+- [x] `python -m unittest discover -s tests` chạy được **toàn bộ** 3 module — **19 test pass** (D2) ✅
+- [x] `experiments/` có script benchmark + bảng số liệu cho Caesar ✅, Vigenère ✅, Playfair ✅
 - [ ] `docs/final_report.md` đủ 5 phần bắt buộc (Mục tiêu / Lý thuyết / Kịch bản Lab / Kết quả / Phòng chống)
 - [ ] Slide 25–40 đúng mẫu UTH, có video demo dự phòng
 - [ ] Tất cả commit push lên GitHub qua feature branch + PR (không push thẳng `main`)
@@ -128,7 +128,7 @@ git push -u origin <nhánh>
 
 ## 8. Checklist nộp bài cuối cùng (tóm tắt — chi tiết tại `docs/checklist.md`)
 
-- [ ] **Code:** 3 module chạy ổn định trong Docker
+- [x] **Code:** 3 module chạy ổn định trong Docker — 19/19 test pass ✅
 - [ ] **Báo cáo:** đủ 5 phần, đúng định dạng Markdown/Word/PDF
 - [ ] **Slide:** 25–40 slide, mẫu UTH, chuẩn font size
 - [ ] **Demo:** kịch bản + video dự phòng sẵn sàng

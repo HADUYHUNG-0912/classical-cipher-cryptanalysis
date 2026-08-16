@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cryptanalysis Toolkit — Classical Cipher Demo</title>
+<style>
+/* ═══════════════════ ROOT VARIABLES ═══════════════════ */
+:root {
+  --gold:          #c9a84c;
+  --gold-light:    #e8cc6a;
+  --gold-dark:     #7a5f1a;
+  --crimson:       #8b1a1a;
+  --crimson-light: #b52525;
+  --emerald:       #1a4a2d;
+  --emerald-light: #256b3f;
+  --violet:        #3a1a5c;
+  --violet-light:  #5a2a8c;
+  --bg:            #080501;
+  --bg-panel:      #120c04;
+  --bg-card:       #1c1408;
+  --bg-input:      #231a0a;
+  --border:        #3a2808;
+  --border-gold:   #6a4f18;
+  --text:          #e8d5b0;
+  --text-muted:    #8a7050;
+  --text-dim:      #5a4030;
+  --serif:         'Times New Roman', Times, Georgia, serif;
+  --mono:          'Courier New', Courier, monospace;
+}
+
+/* ═══════════════════ RESET & BASE ═══════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--serif);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, #1f1004 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, #0f0802 0%, transparent 60%);
+}
+
+/* ═══════════════════ TEXTURE OVERLAY ═══════════════════ */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,220,120,0.012) 2px, rgba(255,220,120,0.012) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(255,200,80,0.008) 3px, rgba(255,200,80,0.008) 6px);
+}
+
+/* ═══════════════════ SCROLLBAR ═══════════════════ */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 4px; }
+
+/* ═══════════════════ HEADER ═══════════════════ */
+.site-header {
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 3.5rem 2rem 2.5rem;
+  border-bottom: 1px solid var(--border-gold);
+  background: linear-gradient(180deg, #1c0f04 0%, transparent 100%);
+}
+
+.header-seal {
+  display: inline-block;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #c9a84c, #7a4a08);
+  border: 3px solid var(--gold-dark);
+  box-shadow: 0 0 30px rgba(201,168,76,0.3), inset 0 0 20px rgba(0,0,0,0.4);
+  font-size: 2rem; line-height: 72px;
+  margin-bottom: 1.5rem;
+  animation: sealGlow 4s ease-in-out infinite;
+}
+
+@keyframes sealGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.3), inset 0 0 20px rgba(0,0,0,0.4); }
+  50%       { box-shadow: 0 0 50px rgba(201,168,76,0.6), inset 0 0 20px rgba(0,0,0,0.4); }
+}
+
+.header-ornament {
+  color: var(--gold-dark);
+  font-size: 1.1rem;
+  letter-spacing: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.main-title {
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  font-weight: normal;
+  letter-spacing: 0.25em;
+  color: var(--gold-light);
+  text-shadow: 0 0 40px rgba(232,204,106,0.4);
+  margin-bottom: 0.6rem;
+}
+
+.main-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  margin-bottom: 0.4rem;
+  font-style: italic;
+}
+
+.main-tagline {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+}
+
+.header-divider {
+  margin: 1.5rem auto 0;
+  width: 300px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dark), var(--gold), var(--gold-dark), transparent);
+}
+
+/* ═══════════════════ TABS ═══════════════════ */
+.cipher-nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex;
+  background: linear-gradient(180deg, #160f05 0%, #0f0a04 100%);
+  border-bottom: 2px solid var(--border-gold);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 1.1rem 1rem;
+  background: transparent;
+  border: none; border-right: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+}
+
+.tab-btn:last-child { border-right: none; }
+
+.tab-numeral {
+  font-size: 0.7rem;
+  color: var(--gold-dark);
+  letter-spacing: 0.2em;
+}
+
+.tab-btn:hover {
+  background: rgba(201,168,76,0.06);
+  color: var(--text-muted);
+}
+
+.tab-btn.active {
+  background: linear-gradient(180deg, rgba(201,168,76,0.15) 0%, rgba(201,168,76,0.05) 100%);
+  color: var(--gold-light);
+  border-bottom: 2px solid var(--gold);
+  margin-bottom: -2px;
+}
+
+.tab-btn.active .tab-numeral { color: var(--gold); }
+
+/* ═══════════════════ MAIN CONTENT ═══════════════════ */
+.main-content {
+  position: relative; z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+/* ═══════════════════ CIPHER PANEL ═══════════════════ */
+.cipher-panel { display: none; }
+.cipher-panel.active { display: block; }
+
+.panel-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  font-size: 1.6rem;
+  font-weight: normal;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.panel-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ═══════════════════ ACTION GRID ═══════════════════ */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ═══════════════════ ACTION CARD ═══════════════════ */
+.action-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 1.8rem;
+  position: relative;
+  transition: border-color 0.3s ease;
+}
+
+.action-card::before {
+  content: '';
+  position: absolute; inset: 3px;
+  border: 1px solid rgba(201,168,76,0.06);
+  pointer-events: none;
+}
+
+.action-card:hover { border-color: var(--border-gold); }
+
+.card-type-encrypt { border-top: 3px solid var(--crimson); }
+.card-type-decrypt { border-top: 3px solid var(--emerald); }
+.card-type-attack  { border-top: 3px solid var(--violet); }
+
+.card-title {
+  font-size: 1rem;
+  font-weight: normal;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+
+.card-icon { font-size: 1.1rem; }
+
+.method-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 0.15rem 0.6rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+/* ═══════════════════ FORM ELEMENTS ═══════════════════ */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+}
+
+textarea, input[type="text"], input[type="number"] {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  padding: 0.7rem 0.9rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.05em;
+}
+
+textarea { min-height: 80px; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button { display: none; }
+
+textarea:focus, input:focus {
+  border-color: var(--gold-dark);
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.08);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+
+/* Playfair sliders */
+.slider-group { margin-bottom: 1rem; }
+.slider-group label {
+  font-size: 0.8rem; color: var(--text-muted);
+  letter-spacing: 0.1em; display: flex; justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+.slider-value { color: var(--gold); font-family: var(--mono); }
+input[type="range"] {
+  width: 100%; accent-color: var(--gold);
+  background: transparent; cursor: pointer;
+}
+
+/* ═══════════════════ BUTTONS ═══════════════════ */
+.action-btn {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  border: 1px solid;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-top: 0.5rem;
+  position: relative; overflow: hidden;
+}
+
+.action-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.btn-encrypt {
+  background: linear-gradient(135deg, #2a0808 0%, #1a0505 100%);
+  border-color: var(--crimson);
+  color: #e8b0b0;
+}
+.btn-encrypt:hover {
+  background: linear-gradient(135deg, var(--crimson) 0%, #6b1010 100%);
+  color: #ffe0e0;
+  box-shadow: 0 0 20px rgba(139,26,26,0.4);
+}
+
+.btn-decrypt {
+  background: linear-gradient(135deg, #081a0e 0%, #050f08 100%);
+  border-color: var(--emerald);
+  color: #a0d0b0;
+}
+.btn-decrypt:hover {
+  background: linear-gradient(135deg, var(--emerald) 0%, #0f3020 100%);
+  color: #c0f0d0;
+  box-shadow: 0 0 20px rgba(26,74,45,0.5);
+}
+
+.btn-attack {
+  background: linear-gradient(135deg, #12081e 0%, #0a0512 100%);
+  border-color: var(--violet);
+  color: #c0a0e0;
+}
+.btn-attack:hover {
+  background: linear-gradient(135deg, var(--violet) 0%, #250f40 100%);
+  color: #e0c0ff;
+  box-shadow: 0 0 20px rgba(58,26,92,0.5);
+}
+
+.action-btn:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+
+/* ═══════════════════ LOADING ═══════════════════ */
+.loading-bar {
+  display: none;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  background-size: 200% 100%;
+  animation: loadSlide 1s linear infinite;
+  margin-top: 0.5rem;
+}
+
+@keyframes loadSlide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════ RESULT BOX ═══════════════════ */
+.result-box {
+  margin-top: 1rem;
+  min-height: 60px;
+  display: none;
+}
+
+.result-box.visible { display: block; }
+
+.result-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.4rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.result-time {
+  color: var(--gold-dark);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+}
+
+.result-text {
+  background: #0a0603;
+  border: 1px solid var(--border);
+  padding: 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: #d0c090;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+  line-height: 1.6;
+  border-left: 3px solid var(--gold-dark);
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+.result-meta {
+  margin-top: 0.5rem;
+  display: flex; gap: 0.8rem; flex-wrap: wrap;
+}
+
+.meta-chip {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.6rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+
+.meta-chip span { color: var(--gold); font-family: var(--mono); font-style: normal; }
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--border-gold);
+  color: var(--gold-dark);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+  font-family: var(--serif);
+  letter-spacing: 0.1em;
+  transition: all 0.2s;
+}
+.copy-btn:hover { color: var(--gold); border-color: var(--gold); }
+
+.error-text {
+  color: #e04040;
+  font-size: 0.82rem;
+  font-style: italic;
+  padding: 0.5rem;
+  border-left: 3px solid var(--crimson);
+  background: rgba(139,26,26,0.1);
+  animation: fadeIn 0.3s ease;
+}
+
+/* ═══════════════════ STATS SECTION ═══════════════════ */
+.stats-section {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+.stats-title {
+  font-size: 1rem;
+  font-weight: normal;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.stats-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 1.2rem;
+}
+
+.stats-card-title {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.stats-table th {
+  color: var(--text-dim);
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-style: italic;
+}
+
+.stats-table th:first-child { text-align: left; }
+
+.stats-table td {
+  padding: 0.3rem 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(58,40,8,0.3);
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
+.stats-table td:first-child { text-align: left; color: var(--text); font-family: var(--serif); }
+
+.stats-table tr:hover td { background: rgba(201,168,76,0.03); }
+
+.pct-high { color: #60d060 !important; }
+.pct-mid  { color: #d0c060 !important; }
+.pct-low  { color: #d06060 !important; }
+
+/* ═══════════════════ FOOTER ═══════════════════ */
+.site-footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border-gold);
+  padding: 2rem;
+  text-align: center;
+  margin-top: 3rem;
+  background: linear-gradient(0deg, #0f0a04 0%, transparent 100%);
+}
+
+.footer-ornament { color: var(--gold-dark); letter-spacing: 0.5rem; margin-bottom: 0.8rem; }
+.footer-text { font-size: 0.78rem; color: var(--text-dim); letter-spacing: 0.12em; font-style: italic; }
+.footer-text a { color: var(--gold-dark); text-decoration: none; }
+.footer-text a:hover { color: var(--gold); }
+
+/* ═══════════════════ RESPONSIVE ═══════════════════ */
+@media (max-width: 640px) {
+  .main-title { font-size: 1.5rem; }
+  .action-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .tab-btn { font-size: 0.8rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════ HEADER ════════════════════════════════════ -->
+<header class="site-header">
+  <div class="header-ornament">✦ ✦ ✦</div>
+  <div class="header-seal">🔏</div>
+  <h1 class="main-title">CRYPTANALYSIS TOOLKIT</h1>
+  <p class="main-subtitle">Classical Cipher Analysis · Caesar · Vigenère · Playfair</p>
+  <p class="main-tagline">An toàn Thông tin — Thám mã Mật mã Cổ điển</p>
+  <div class="header-divider"></div>
+</header>
+
+<!-- ════════════════════════════════════ TABS ════════════════════════════════════ -->
+<nav class="cipher-nav">
+  <button class="tab-btn active" onclick="switchTab('caesar', this)">
+    <span class="tab-numeral">CAES · I</span>
+    <span>Caesar Cipher</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('vigenere', this)">
+    <span class="tab-numeral">VIG · II</span>
+    <span>Vigenère Cipher</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('playfair', this)">
+    <span class="tab-numeral">PLAY · III</span>
+    <span>Playfair Cipher</span>
+  </button>
+</nav>
+
+<!-- ════════════════════════════════════ MAIN ════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- ────────────────── CAESAR PANEL ────────────────── -->
+  <section class="cipher-panel active" id="panel-caesar">
+    <div class="panel-header">
+      <h2 class="panel-title">CAESAR CIPHER</h2>
+      <p class="panel-desc">Mã dịch chuyển đơn giản — Julius Caesar, ~100 B.C. · Brute-force 25 khóa + Chi-squared scoring</p>
+    </div>
+
+    <div class="action-grid">
+      <!-- Encrypt -->
+      <div class="action-card card-type-encrypt">
+        <h3 class="card-title"><span class="card-icon">🔒</span> MÃ HÓA</h3>
+        <div class="form-group">
+          <label>Văn bản gốc (Plaintext)</label>
+          <textarea id="c-enc-text" placeholder="THEQUICKBROWNFOX..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Khóa — Shift (1–25)</label>
+            <input type="number" id="c-enc-key" value="3" min="1" max="25">
+          </div>
+        </div>
+        <button class="action-btn btn-encrypt" onclick="doAction('caesar','encrypt')">
+          ⚙ Mã Hóa
+        </button>
+        <div class="loading-bar" id="lb-caesar-encrypt"></div>
+        <div class="result-box" id="rb-caesar-encrypt"></div>
+      </div>
+
+      <!-- Decrypt -->
+      <div class="action-card card-type-decrypt">
+        <h3 class="card-title"><span class="card-icon">🔓</span> GIẢI MÃ</h3>
+        <div class="form-group">
+          <label>Văn bản mật mã (Ciphertext)</label>
+          <textarea id="c-dec-text" placeholder="WKHTXLFNEURZQIRA..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Khóa — Shift (1–25)</label>
+            <input type="number" id="c-dec-key" value="3" min="1" max="25">
+          </div>
+        </div>
+        <button class="action-btn btn-decrypt" onclick="doAction('caesar','decrypt')">
+          ⚙ Giải Mã
+        </button>
+        <div class="loading-bar" id="lb-caesar-decrypt"></div>
+        <div class="result-box" id="rb-caesar-decrypt"></div>
+      </div>
+
+      <!-- Attack -->
+      <div class="action-card card-type-attack">
+        <h3 class="card-title"><span class="card-icon">⚔</span> PHÁ MÃ TỰ ĐỘNG</h3>
+        <p class="method-badge">Brute-force 25 keys · Chi-squared frequency analysis</p>
+        <div class="form-group">
+          <label>Văn bản mật mã (không cần biết khóa)</label>
+          <textarea id="c-atk-text" placeholder="Nhập ciphertext cần phá..."></textarea>
+        </div>
+        <button class="action-btn btn-attack" onclick="doAction('caesar','attack')">
+          ⚔ Phá Mã Tự Động
+        </button>
+        <div class="loading-bar" id="lb-caesar-attack"></div>
+        <div class="result-box" id="rb-caesar-attack"></div>
+      </div>
+    </div>
+
+    <!-- Caesar Stats -->
+    <div class="stats-section">
+      <p class="stats-title">⸻ KẾT QUẢ THỰC NGHIỆM ⸻</p>
+      <div class="stats-grid">
+        <div class="stats-card">
+          <p class="stats-card-title">CAESAR — Tỷ lệ phá mã theo độ dài văn bản</p>
+          <table class="stats-table" id="tbl-caesar"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ────────────────── VIGENÈRE PANEL ────────────────── -->
+  <section class="cipher-panel" id="panel-vigenere">
+    <div class="panel-header">
+      <h2 class="panel-title">VIGENÈRE CIPHER</h2>
+      <p class="panel-desc">Mã đa bảng thay thế — Blaise de Vigenère, 1586 · Index of Coincidence + Bigram scoring</p>
+    </div>
+
+    <div class="action-grid">
+      <!-- Encrypt -->
+      <div class="action-card card-type-encrypt">
+        <h3 class="card-title"><span class="card-icon">🔒</span> MÃ HÓA</h3>
+        <div class="form-group">
+          <label>Văn bản gốc (Plaintext)</label>
+          <textarea id="v-enc-text" placeholder="THEQUICKBROWNFOX..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Khóa (Key — chữ cái A–Z)</label>
+          <input type="text" id="v-enc-key" placeholder="KEY" style="text-transform:uppercase">
+        </div>
+        <button class="action-btn btn-encrypt" onclick="doAction('vigenere','encrypt')">
+          ⚙ Mã Hóa
+        </button>
+        <div class="loading-bar" id="lb-vigenere-encrypt"></div>
+        <div class="result-box" id="rb-vigenere-encrypt"></div>
+      </div>
+
+      <!-- Decrypt -->
+      <div class="action-card card-type-decrypt">
+        <h3 class="card-title"><span class="card-icon">🔓</span> GIẢI MÃ</h3>
+        <div class="form-group">
+          <label>Văn bản mật mã (Ciphertext)</label>
+          <textarea id="v-dec-text" placeholder="DIOEVRIENBCZN..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Khóa (Key — chữ cái A–Z)</label>
+          <input type="text" id="v-dec-key" placeholder="KEY" style="text-transform:uppercase">
+        </div>
+        <button class="action-btn btn-decrypt" onclick="doAction('vigenere','decrypt')">
+          ⚙ Giải Mã
+        </button>
+        <div class="loading-bar" id="lb-vigenere-decrypt"></div>
+        <div class="result-box" id="rb-vigenere-decrypt"></div>
+      </div>
+
+      <!-- Attack -->
+      <div class="action-card card-type-attack">
+        <h3 class="card-title"><span class="card-icon">⚔</span> PHÁ MÃ TỰ ĐỘNG</h3>
+        <p class="method-badge">Index of Coincidence · Bigram log-likelihood</p>
+        <div class="form-group">
+          <label>Văn bản mật mã (không cần biết khóa — nên ≥ 100 ký tự)</label>
+          <textarea id="v-atk-text" placeholder="Nhập ciphertext cần phá..." style="min-height:100px"></textarea>
+        </div>
+        <button class="action-btn btn-attack" onclick="doAction('vigenere','attack')">
+          ⚔ Phá Mã Tự Động
+        </button>
+        <div class="loading-bar" id="lb-vigenere-attack"></div>
+        <div class="result-box" id="rb-vigenere-attack"></div>
+      </div>
+    </div>
+
+    <!-- Vigenère Stats -->
+    <div class="stats-section">
+      <p class="stats-title">⸻ KẾT QUẢ THỰC NGHIỆM ⸻</p>
+      <div class="stats-grid">
+        <div class="stats-card" style="grid-column: 1 / -1">
+          <p class="stats-card-title">VIGENÈRE — Tỷ lệ phá mã theo độ dài văn bản × độ dài khóa</p>
+          <table class="stats-table" id="tbl-vigenere"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ────────────────── PLAYFAIR PANEL ────────────────── -->
+  <section class="cipher-panel" id="panel-playfair">
+    <div class="panel-header">
+      <h2 class="panel-title">PLAYFAIR CIPHER</h2>
+      <p class="panel-desc">Mã digraph 5×5 — Charles Wheatstone, 1854 · Simulated Annealing + Non-overlapping digraph scoring</p>
+    </div>
+
+    <div class="action-grid">
+      <!-- Encrypt -->
+      <div class="action-card card-type-encrypt">
+        <h3 class="card-title"><span class="card-icon">🔒</span> MÃ HÓA</h3>
+        <div class="form-group">
+          <label>Văn bản gốc (Plaintext — chỉ A–Z, tự động xử lý J→I)</label>
+          <textarea id="p-enc-text" placeholder="INSTRUMENTS..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Khóa (Key — từ khóa tạo bảng 5×5)</label>
+          <input type="text" id="p-enc-key" placeholder="MONARCHY" style="text-transform:uppercase">
+        </div>
+        <button class="action-btn btn-encrypt" onclick="doAction('playfair','encrypt')">
+          ⚙ Mã Hóa
+        </button>
+        <div class="loading-bar" id="lb-playfair-encrypt"></div>
+        <div class="result-box" id="rb-playfair-encrypt"></div>
+      </div>
+
+      <!-- Decrypt -->
+      <div class="action-card card-type-decrypt">
+        <h3 class="card-title"><span class="card-icon">🔓</span> GIẢI MÃ</h3>
+        <div class="form-group">
+          <label>Văn bản mật mã (Ciphertext)</label>
+          <textarea id="p-dec-text" placeholder="GATLMZCLRQXA..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Khóa (Key — từ khóa tạo bảng 5×5)</label>
+          <input type="text" id="p-dec-key" placeholder="MONARCHY" style="text-transform:uppercase">
+        </div>
+        <button class="action-btn btn-decrypt" onclick="doAction('playfair','decrypt')">
+          ⚙ Giải Mã
+        </button>
+        <div class="loading-bar" id="lb-playfair-decrypt"></div>
+        <div class="result-box" id="rb-playfair-decrypt"></div>
+      </div>
+
+      <!-- Attack -->
+      <div class="action-card card-type-attack">
+        <h3 class="card-title"><span class="card-icon">⚔</span> PHÁ MÃ TỰ ĐỘNG</h3>
+        <p class="method-badge">Simulated Annealing · Non-overlapping digraph · Random Restart</p>
+        <div class="form-group">
+          <label>Văn bản mật mã (không cần khóa — khuyến nghị ≥ 200 ký tự)</label>
+          <textarea id="p-atk-text" placeholder="Nhập ciphertext cần phá..." style="min-height:100px"></textarea>
+        </div>
+        <div class="slider-group">
+          <label>
+            Iterations (số vòng lặp SA)
+            <span class="slider-value" id="sv-iter">2000</span>
+          </label>
+          <input type="range" id="sl-iter" min="500" max="10000" step="500" value="2000"
+                 oninput="document.getElementById('sv-iter').textContent=this.value">
+        </div>
+        <div class="slider-group">
+          <label>
+            Restarts (số lần khởi động lại)
+            <span class="slider-value" id="sv-rest">5</span>
+          </label>
+          <input type="range" id="sl-rest" min="1" max="15" step="1" value="5"
+                 oninput="document.getElementById('sv-rest').textContent=this.value">
+        </div>
+        <button class="action-btn btn-attack" onclick="doAction('playfair','attack')">
+          ⚔ Phá Mã Tự Động
+        </button>
+        <div class="loading-bar" id="lb-playfair-attack"></div>
+        <div class="result-box" id="rb-playfair-attack"></div>
+      </div>
+    </div>
+
+    <!-- Playfair Stats -->
+    <div class="stats-section">
+      <p class="stats-title">⸻ KẾT QUẢ THỰC NGHIỆM ⸻</p>
+      <div class="stats-grid">
+        <div class="stats-card">
+          <p class="stats-card-title">PLAYFAIR — Độ chính xác theo độ dài văn bản</p>
+          <table class="stats-table" id="tbl-playfair"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ════════════════════════════════════ FOOTER ════════════════════════════════════ -->
+<footer class="site-footer">
+  <p class="footer-ornament">⸻ ✦ ⸻</p>
+  <p class="footer-text">
+    Cryptanalysis Toolkit · An toàn Thông tin ·
+    <em>Caesar · Vigenère · Playfair</em>
+  </p>
+  <p class="footer-text" style="margin-top:0.4rem">
+    19 unit tests · Simulated Annealing · Index of Coincidence · Chi-squared
+  </p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(cipher, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.cipher-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + cipher).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COLLECT PAYLOAD
+// ═══════════════════════════════════════════════════════════
+function getPayload(cipher, op) {
+  const p = {};
+  if (cipher === 'caesar') {
+    if (op === 'encrypt') { p.text = document.getElementById('c-enc-text').value; p.key = document.getElementById('c-enc-key').value; }
+    if (op === 'decrypt') { p.text = document.getElementById('c-dec-text').value; p.key = document.getElementById('c-dec-key').value; }
+    if (op === 'attack')  { p.text = document.getElementById('c-atk-text').value; }
+  } else if (cipher === 'vigenere') {
+    if (op === 'encrypt') { p.text = document.getElementById('v-enc-text').value; p.key = document.getElementById('v-enc-key').value; }
+    if (op === 'decrypt') { p.text = document.getElementById('v-dec-text').value; p.key = document.getElementById('v-dec-key').value; }
+    if (op === 'attack')  { p.text = document.getElementById('v-atk-text').value; }
+  } else if (cipher === 'playfair') {
+    if (op === 'encrypt') { p.text = document.getElementById('p-enc-text').value; p.key = document.getElementById('p-enc-key').value; }
+    if (op === 'decrypt') { p.text = document.getElementById('p-dec-text').value; p.key = document.getElementById('p-dec-key').value; }
+    if (op === 'attack')  {
+      p.text = document.getElementById('p-atk-text').value;
+      p.iterations = parseInt(document.getElementById('sl-iter').value);
+      p.restarts   = parseInt(document.getElementById('sl-rest').value);
+    }
+  }
+  return p;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAIN ACTION HANDLER
+// ═══════════════════════════════════════════════════════════
+async function doAction(cipher, op) {
+  const rbId = `rb-${cipher}-${op}`;
+  const lbId = `lb-${cipher}-${op}`;
+  const rb = document.getElementById(rbId);
+  const lb = document.getElementById(lbId);
+  const payload = getPayload(cipher, op);
+
+  // Show loading
+  lb.style.display = 'block';
+  rb.classList.remove('visible');
+  rb.innerHTML = '';
+
+  // Disable the button
+  const btns = document.querySelectorAll(`#panel-${cipher} .action-btn`);
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    const res = await fetch(`/api/${cipher}/${op}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    lb.style.display = 'none';
+    rb.classList.add('visible');
+
+    if (data.error) {
+      rb.innerHTML = `<div class="error-text">⚠ ${data.error}</div>`;
+    } else {
+      renderResult(rb, data, cipher, op);
+    }
+  } catch(e) {
+    lb.style.display = 'none';
+    rb.classList.add('visible');
+    rb.innerHTML = `<div class="error-text">⚠ Lỗi kết nối server: ${e.message}</div>`;
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER RESULT
+// ═══════════════════════════════════════════════════════════
+function renderResult(rb, data, cipher, op) {
+  const result = data.result || '';
+  const id = `res-${cipher}-${op}`;
+
+  let chips = `<div class="result-meta">`;
+  chips += `<div class="meta-chip">⏱ <span>${data.time_ms} ms</span></div>`;
+
+  if (op === 'attack' || op === 'encrypt' || op === 'decrypt') {
+    if (data.key !== undefined) {
+      const keyLabel = cipher === 'caesar' ? `shift = ${data.key}` : `key = ${data.key}`;
+      chips += `<div class="meta-chip">🗝 <span>${keyLabel}</span></div>`;
+    }
+  }
+  if (data.estimated_key_len) {
+    chips += `<div class="meta-chip">📏 est. key len = <span>${data.estimated_key_len}</span></div>`;
+  }
+  chips += `</div>`;
+
+  rb.innerHTML = `
+    <div class="result-label">
+      <span>— RESULT —</span>
+      <button class="copy-btn" onclick="copyText('${id}')">Copy</button>
+    </div>
+    <div class="result-text" id="${id}">${escHtml(result)}</div>
+    ${chips}
+  `;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyText(id) {
+  const txt = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(txt).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD EXPERIMENT STATS
+// ═══════════════════════════════════════════════════════════
+function pctClass(pct) {
+  const v = parseFloat(pct);
+  if (v >= 70) return 'pct-high';
+  if (v >= 40) return 'pct-mid';
+  return 'pct-low';
+}
+
+async function loadStats() {
+  // Caesar
+  try {
+    const rows = await fetch('/api/results/caesar').then(r => r.json());
+    const tbl = document.getElementById('tbl-caesar');
+    tbl.innerHTML = `<tr><th>Độ dài L</th><th>Số lần</th><th>Thời gian (ms)</th><th>Tỷ lệ đúng</th></tr>`;
+    rows.forEach(r => {
+      const pct = r['Ti le pha dung (%)'];
+      tbl.innerHTML += `<tr>
+        <td>${r['Do dai L']}</td>
+        <td>${r['Lap N']}</td>
+        <td>${r['TB thoi gian (ms)']}</td>
+        <td class="${pctClass(pct)}">${pct}%</td>
+      </tr>`;
+    });
+  } catch(e) {}
+
+  // Vigenère
+  try {
+    const rows = await fetch('/api/results/vigenere').then(r => r.json());
+    const tbl = document.getElementById('tbl-vigenere');
+    tbl.innerHTML = `<tr><th>Độ dài L</th><th>Key len</th><th>Thời gian (ms)</th><th>Key đúng</th><th>Chính xác VB</th></tr>`;
+    rows.forEach(r => {
+      const p1 = r['Ti le key dung (%)'];
+      const p2 = r['Do chinh xac VB (%)'];
+      tbl.innerHTML += `<tr>
+        <td>${r['Do dai L']}</td>
+        <td>${r['Key length']}</td>
+        <td>${r['TB thoi gian (ms)']}</td>
+        <td class="${pctClass(p1)}">${p1}%</td>
+        <td class="${pctClass(p2)}">${p2}%</td>
+      </tr>`;
+    });
+  } catch(e) {}
+
+  // Playfair
+  try {
+    const rows = await fetch('/api/results/playfair').then(r => r.json());
+    const tbl = document.getElementById('tbl-playfair');
+    tbl.innerHTML = `<tr><th>Độ dài L</th><th>Iterations</th><th>Restarts</th><th>Thời gian (ms)</th><th>Chính xác</th></tr>`;
+    rows.forEach(r => {
+      const p = r['TB do chinh xac (%)'];
+      tbl.innerHTML += `<tr>
+        <td>${r['Do dai L']}</td>
+        <td>${r['Iterations']}</td>
+        <td>${r['Restarts']}</td>
+        <td>${r['TB thoi gian (ms)']}</td>
+        <td class="${pctClass(p)}">${p}%</td>
+      </tr>`;
+    });
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+
+  // Auto-uppercase key inputs
+  document.querySelectorAll('input[style*="text-transform:uppercase"]').forEach(el => {
+    el.addEventListener('input', () => { el.value = el.value.toUpperCase().replace(/[^A-Z]/g,''); });
+  });
+});
+</script>
+</body>
+</html>
