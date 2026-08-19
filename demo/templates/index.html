@@ -1,1028 +1,1893 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cryptanalysis Toolkit — Classical Cipher Demo</title>
-<style>
-/* ═══════════════════ ROOT VARIABLES ═══════════════════ */
-:root {
-  --gold:          #c9a84c;
-  --gold-light:    #e8cc6a;
-  --gold-dark:     #7a5f1a;
-  --crimson:       #8b1a1a;
-  --crimson-light: #b52525;
-  --emerald:       #1a4a2d;
-  --emerald-light: #256b3f;
-  --violet:        #3a1a5c;
-  --violet-light:  #5a2a8c;
-  --bg:            #080501;
-  --bg-panel:      #120c04;
-  --bg-card:       #1c1408;
-  --bg-input:      #231a0a;
-  --border:        #3a2808;
-  --border-gold:   #6a4f18;
-  --text:          #e8d5b0;
-  --text-muted:    #8a7050;
-  --text-dim:      #5a4030;
-  --serif:         'Times New Roman', Times, Georgia, serif;
-  --mono:          'Courier New', Courier, monospace;
-}
-
-/* ═══════════════════ RESET & BASE ═══════════════════ */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: var(--serif);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  background-image:
-    radial-gradient(ellipse 80% 60% at 50% 0%, #1f1004 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, #0f0802 0%, transparent 60%);
-}
-
-/* ═══════════════════ TEXTURE OVERLAY ═══════════════════ */
-body::before {
-  content: '';
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,220,120,0.012) 2px, rgba(255,220,120,0.012) 4px),
-    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(255,200,80,0.008) 3px, rgba(255,200,80,0.008) 6px);
-}
-
-/* ═══════════════════ SCROLLBAR ═══════════════════ */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-panel); }
-::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 4px; }
-
-/* ═══════════════════ HEADER ═══════════════════ */
-.site-header {
-  position: relative; z-index: 1;
-  text-align: center;
-  padding: 3.5rem 2rem 2.5rem;
-  border-bottom: 1px solid var(--border-gold);
-  background: linear-gradient(180deg, #1c0f04 0%, transparent 100%);
-}
-
-.header-seal {
-  display: inline-block;
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #c9a84c, #7a4a08);
-  border: 3px solid var(--gold-dark);
-  box-shadow: 0 0 30px rgba(201,168,76,0.3), inset 0 0 20px rgba(0,0,0,0.4);
-  font-size: 2rem; line-height: 72px;
-  margin-bottom: 1.5rem;
-  animation: sealGlow 4s ease-in-out infinite;
-}
-
-@keyframes sealGlow {
-  0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.3), inset 0 0 20px rgba(0,0,0,0.4); }
-  50%       { box-shadow: 0 0 50px rgba(201,168,76,0.6), inset 0 0 20px rgba(0,0,0,0.4); }
-}
-
-.header-ornament {
-  color: var(--gold-dark);
-  font-size: 1.1rem;
-  letter-spacing: 0.3rem;
-  margin-bottom: 1rem;
-}
-
-.main-title {
-  font-size: clamp(1.8rem, 5vw, 3.2rem);
-  font-weight: normal;
-  letter-spacing: 0.25em;
-  color: var(--gold-light);
-  text-shadow: 0 0 40px rgba(232,204,106,0.4);
-  margin-bottom: 0.6rem;
-}
-
-.main-subtitle {
-  font-size: 1rem;
-  color: var(--text-muted);
-  letter-spacing: 0.2em;
-  margin-bottom: 0.4rem;
-  font-style: italic;
-}
-
-.main-tagline {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  letter-spacing: 0.15em;
-}
-
-.header-divider {
-  margin: 1.5rem auto 0;
-  width: 300px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-dark), var(--gold), var(--gold-dark), transparent);
-}
-
-/* ═══════════════════ TABS ═══════════════════ */
-.cipher-nav {
-  position: sticky; top: 0; z-index: 100;
-  display: flex;
-  background: linear-gradient(180deg, #160f05 0%, #0f0a04 100%);
-  border-bottom: 2px solid var(--border-gold);
-  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 1.1rem 1rem;
-  background: transparent;
-  border: none; border-right: 1px solid var(--border);
-  color: var(--text-dim);
-  font-family: var(--serif);
-  font-size: 0.95rem;
-  letter-spacing: 0.15em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-}
-
-.tab-btn:last-child { border-right: none; }
-
-.tab-numeral {
-  font-size: 0.7rem;
-  color: var(--gold-dark);
-  letter-spacing: 0.2em;
-}
-
-.tab-btn:hover {
-  background: rgba(201,168,76,0.06);
-  color: var(--text-muted);
-}
-
-.tab-btn.active {
-  background: linear-gradient(180deg, rgba(201,168,76,0.15) 0%, rgba(201,168,76,0.05) 100%);
-  color: var(--gold-light);
-  border-bottom: 2px solid var(--gold);
-  margin-bottom: -2px;
-}
-
-.tab-btn.active .tab-numeral { color: var(--gold); }
-
-/* ═══════════════════ MAIN CONTENT ═══════════════════ */
-.main-content {
-  position: relative; z-index: 1;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem;
-}
-
-/* ═══════════════════ CIPHER PANEL ═══════════════════ */
-.cipher-panel { display: none; }
-.cipher-panel.active { display: block; }
-
-.panel-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.panel-title {
-  font-size: 1.6rem;
-  font-weight: normal;
-  letter-spacing: 0.3em;
-  color: var(--gold);
-  margin-bottom: 0.5rem;
-}
-
-.panel-desc {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* ═══════════════════ ACTION GRID ═══════════════════ */
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-/* ═══════════════════ ACTION CARD ═══════════════════ */
-.action-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 1.8rem;
-  position: relative;
-  transition: border-color 0.3s ease;
-}
-
-.action-card::before {
-  content: '';
-  position: absolute; inset: 3px;
-  border: 1px solid rgba(201,168,76,0.06);
-  pointer-events: none;
-}
-
-.action-card:hover { border-color: var(--border-gold); }
-
-.card-type-encrypt { border-top: 3px solid var(--crimson); }
-.card-type-decrypt { border-top: 3px solid var(--emerald); }
-.card-type-attack  { border-top: 3px solid var(--violet); }
-
-.card-title {
-  font-size: 1rem;
-  font-weight: normal;
-  letter-spacing: 0.2em;
-  color: var(--gold);
-  margin-bottom: 1.2rem;
-  display: flex; align-items: center; gap: 0.6rem;
-}
-
-.card-icon { font-size: 1.1rem; }
-
-.method-badge {
-  display: inline-block;
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 0.15rem 0.6rem;
-  letter-spacing: 0.1em;
-  margin-bottom: 1rem;
-  font-style: italic;
-}
-
-/* ═══════════════════ FORM ELEMENTS ═══════════════════ */
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  letter-spacing: 0.12em;
-  margin-bottom: 0.4rem;
-}
-
-textarea, input[type="text"], input[type="number"] {
-  width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 0.88rem;
-  padding: 0.7rem 0.9rem;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  letter-spacing: 0.05em;
-}
-
-textarea { min-height: 80px; }
-input[type="number"] { -moz-appearance: textfield; }
-input[type="number"]::-webkit-inner-spin-button { display: none; }
-
-textarea:focus, input:focus {
-  border-color: var(--gold-dark);
-  box-shadow: 0 0 0 2px rgba(201,168,76,0.08);
-}
-
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-
-/* Playfair sliders */
-.slider-group { margin-bottom: 1rem; }
-.slider-group label {
-  font-size: 0.8rem; color: var(--text-muted);
-  letter-spacing: 0.1em; display: flex; justify-content: space-between;
-  margin-bottom: 0.4rem;
-}
-.slider-value { color: var(--gold); font-family: var(--mono); }
-input[type="range"] {
-  width: 100%; accent-color: var(--gold);
-  background: transparent; cursor: pointer;
-}
-
-/* ═══════════════════ BUTTONS ═══════════════════ */
-.action-btn {
-  width: 100%;
-  padding: 0.8rem 1.5rem;
-  border: 1px solid;
-  font-family: var(--serif);
-  font-size: 0.9rem;
-  letter-spacing: 0.18em;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  margin-top: 0.5rem;
-  position: relative; overflow: hidden;
-}
-
-.action-btn::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.btn-encrypt {
-  background: linear-gradient(135deg, #2a0808 0%, #1a0505 100%);
-  border-color: var(--crimson);
-  color: #e8b0b0;
-}
-.btn-encrypt:hover {
-  background: linear-gradient(135deg, var(--crimson) 0%, #6b1010 100%);
-  color: #ffe0e0;
-  box-shadow: 0 0 20px rgba(139,26,26,0.4);
-}
-
-.btn-decrypt {
-  background: linear-gradient(135deg, #081a0e 0%, #050f08 100%);
-  border-color: var(--emerald);
-  color: #a0d0b0;
-}
-.btn-decrypt:hover {
-  background: linear-gradient(135deg, var(--emerald) 0%, #0f3020 100%);
-  color: #c0f0d0;
-  box-shadow: 0 0 20px rgba(26,74,45,0.5);
-}
-
-.btn-attack {
-  background: linear-gradient(135deg, #12081e 0%, #0a0512 100%);
-  border-color: var(--violet);
-  color: #c0a0e0;
-}
-.btn-attack:hover {
-  background: linear-gradient(135deg, var(--violet) 0%, #250f40 100%);
-  color: #e0c0ff;
-  box-shadow: 0 0 20px rgba(58,26,92,0.5);
-}
-
-.action-btn:disabled {
-  opacity: 0.5; cursor: not-allowed;
-}
-
-/* ═══════════════════ LOADING ═══════════════════ */
-.loading-bar {
-  display: none;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  background-size: 200% 100%;
-  animation: loadSlide 1s linear infinite;
-  margin-top: 0.5rem;
-}
-
-@keyframes loadSlide {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ═══════════════════ RESULT BOX ═══════════════════ */
-.result-box {
-  margin-top: 1rem;
-  min-height: 60px;
-  display: none;
-}
-
-.result-box.visible { display: block; }
-
-.result-label {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  letter-spacing: 0.15em;
-  margin-bottom: 0.4rem;
-  display: flex; justify-content: space-between; align-items: center;
-}
-
-.result-time {
-  color: var(--gold-dark);
-  font-family: var(--mono);
-  font-size: 0.7rem;
-}
-
-.result-text {
-  background: #0a0603;
-  border: 1px solid var(--border);
-  padding: 0.8rem;
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  color: #d0c090;
-  letter-spacing: 0.08em;
-  word-break: break-all;
-  line-height: 1.6;
-  border-left: 3px solid var(--gold-dark);
-  animation: fadeIn 0.4s ease;
-}
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
-
-.result-meta {
-  margin-top: 0.5rem;
-  display: flex; gap: 0.8rem; flex-wrap: wrap;
-}
-
-.meta-chip {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 0.2rem 0.6rem;
-  font-style: italic;
-  letter-spacing: 0.08em;
-}
-
-.meta-chip span { color: var(--gold); font-family: var(--mono); font-style: normal; }
-
-.copy-btn {
-  background: transparent;
-  border: 1px solid var(--border-gold);
-  color: var(--gold-dark);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.5rem;
-  cursor: pointer;
-  font-family: var(--serif);
-  letter-spacing: 0.1em;
-  transition: all 0.2s;
-}
-.copy-btn:hover { color: var(--gold); border-color: var(--gold); }
-
-.error-text {
-  color: #e04040;
-  font-size: 0.82rem;
-  font-style: italic;
-  padding: 0.5rem;
-  border-left: 3px solid var(--crimson);
-  background: rgba(139,26,26,0.1);
-  animation: fadeIn 0.3s ease;
-}
-
-/* ═══════════════════ STATS SECTION ═══════════════════ */
-.stats-section {
-  margin-top: 3rem;
-  border-top: 1px solid var(--border);
-  padding-top: 2rem;
-}
-
-.stats-title {
-  font-size: 1rem;
-  font-weight: normal;
-  letter-spacing: 0.25em;
-  color: var(--gold);
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-}
-
-.stats-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  padding: 1.2rem;
-}
-
-.stats-card-title {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  letter-spacing: 0.2em;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-
-.stats-table th {
-  color: var(--text-dim);
-  font-weight: normal;
-  letter-spacing: 0.1em;
-  padding: 0.3rem 0.5rem;
-  border-bottom: 1px solid var(--border);
-  text-align: right;
-  font-style: italic;
-}
-
-.stats-table th:first-child { text-align: left; }
-
-.stats-table td {
-  padding: 0.3rem 0.5rem;
-  text-align: right;
-  border-bottom: 1px solid rgba(58,40,8,0.3);
-  font-family: var(--mono);
-  color: var(--text-muted);
-}
-
-.stats-table td:first-child { text-align: left; color: var(--text); font-family: var(--serif); }
-
-.stats-table tr:hover td { background: rgba(201,168,76,0.03); }
-
-.pct-high { color: #60d060 !important; }
-.pct-mid  { color: #d0c060 !important; }
-.pct-low  { color: #d06060 !important; }
-
-/* ═══════════════════ FOOTER ═══════════════════ */
-.site-footer {
-  position: relative; z-index: 1;
-  border-top: 1px solid var(--border-gold);
-  padding: 2rem;
-  text-align: center;
-  margin-top: 3rem;
-  background: linear-gradient(0deg, #0f0a04 0%, transparent 100%);
-}
-
-.footer-ornament { color: var(--gold-dark); letter-spacing: 0.5rem; margin-bottom: 0.8rem; }
-.footer-text { font-size: 0.78rem; color: var(--text-dim); letter-spacing: 0.12em; font-style: italic; }
-.footer-text a { color: var(--gold-dark); text-decoration: none; }
-.footer-text a:hover { color: var(--gold); }
-
-/* ═══════════════════ RESPONSIVE ═══════════════════ */
-@media (max-width: 640px) {
-  .main-title { font-size: 1.5rem; }
-  .action-grid { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
-  .tab-btn { font-size: 0.8rem; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cryptanalysis Toolkit — Hệ Thống Thám Mã Cổ Điển</title>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       COLOR PALETTE & DESIGN SYSTEM (Tươi Sáng & Chuyên Nghiệp)
+       ═══════════════════════════════════════════════════════════ */
+    :root {
+      /* Backgrounds & Surfaces */
+      --bg-app: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-muted: #e2e8f0;
+      --bg-input: #ffffff;
+      
+      /* Typography Colors */
+      --text-main: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      
+      /* Borders & Dividers */
+      --border-subtle: #e2e8f0;
+      --border-focus: #3b82f6;
+      --border-strong: #cbd5e1;
+      
+      /* Primary Brand / Indigo-Blue */
+      --primary-50: #eef2ff;
+      --primary-100: #e0e7ff;
+      --primary-500: #6366f1;
+      --primary-600: #4f46e5;
+      --primary-700: #4338ca;
+      --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      
+      /* Action Colors */
+      --color-encrypt: #0284c7;
+      --color-encrypt-bg: #f0f9ff;
+      --color-encrypt-border: #bae6fd;
+      --encrypt-gradient: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+      
+      --color-decrypt: #059669;
+      --color-decrypt-bg: #f0fdf4;
+      --color-decrypt-border: #bbf7d0;
+      --decrypt-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      
+      --color-attack: #7c3aed;
+      --color-attack-bg: #faf5ff;
+      --color-attack-border: #e9d5ff;
+      --attack-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      
+      /* Status & Badges */
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      
+      /* Typography Families */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+      
+      /* Radii */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       BASE & RESET
+       ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-subtle); }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+
+    /* ═══════════════════════════════════════════════════════════
+       HEADER & NAVIGATION BAR
+       ═══════════════════════════════════════════════════════════ */
+    .app-header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-top {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 1.1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--primary-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .brand-text h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-text p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 2px #d1fae5;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.8; }
+    }
+
+    /* Navigation Tabs */
+    .tab-navigation {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-navigation::-webkit-scrollbar { display: none; }
+
+    .nav-tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.85rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-subtle);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .nav-tab-btn.active {
+      color: var(--primary-600);
+      border-bottom-color: var(--primary-600);
+      background: var(--primary-50);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .tab-badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      background: var(--bg-muted);
+      color: var(--text-secondary);
+      font-weight: 700;
+    }
+
+    .nav-tab-btn.active .tab-badge {
+      background: #ffffff;
+      color: var(--primary-600);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       MAIN CONTAINER & LAYOUT
+       ═══════════════════════════════════════════════════════════ */
+    .main-container {
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+      flex: 1;
+    }
+
+    .cipher-view {
+      display: none;
+      animation: fadeInView 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cipher-view.active { display: block; }
+
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* View Header Banner */
+    .view-hero {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .hero-info h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .hero-info p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .hero-tags {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       THREE COLUMN ACTION GRID
+       ═══════════════════════════════════════════════════════════ */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1080px) {
+      .action-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Action Card */
+    .action-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .action-card:hover {
+      box-shadow: var(--shadow-lg);
+      border-color: var(--border-strong);
+    }
+
+    /* Specific Card Accents */
+    .card-encrypt { border-top: 4px solid var(--color-encrypt); }
+    .card-decrypt { border-top: 4px solid var(--color-decrypt); }
+    .card-attack { border-top: 4px solid var(--color-attack); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-icon-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .card-encrypt .card-icon-badge { background: var(--color-encrypt-bg); color: var(--color-encrypt); }
+    .card-decrypt .card-icon-badge { background: var(--color-decrypt-bg); color: var(--color-decrypt); }
+    .card-attack .card-icon-badge { background: var(--color-attack-bg); color: var(--color-attack); }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .card-desc-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+    }
+
+    /* Sample bar & Quick helper */
+    .input-helper-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.4rem;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .sample-btn {
+      background: transparent;
+      border: none;
+      color: var(--primary-600);
+      font-size: 0.73rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      transition: background 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .sample-btn:hover { background: var(--primary-50); }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .textarea-wrapper {
+      position: relative;
+    }
+
+    textarea.code-input, input.code-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      padding: 0.75rem 0.85rem;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea.code-input {
+      min-height: 95px;
+      resize: vertical;
+    }
+
+    textarea.code-input:focus, input.code-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .char-counter {
+      font-size: 0.7rem;
+      color: var(--text-light);
+      text-align: right;
+      margin-top: 0.25rem;
+      font-family: var(--font-mono);
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* Range Sliders */
+    .slider-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .slider-value-pill {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      padding: 0.1rem 0.5rem;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--primary-600);
+      font-size: 0.75rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      accent-color: var(--primary-600);
+      background: var(--border-strong);
+      border-radius: 3px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* Buttons */
+    .btn-submit {
+      width: 100%;
+      padding: 0.75rem 1.25rem;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      filter: brightness(1.05);
+    }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-encrypt-style { background: var(--encrypt-gradient); }
+    .btn-decrypt-style { background: var(--decrypt-gradient); }
+    .btn-attack-style { background: var(--attack-gradient); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3); }
+
+    /* Loading indicator */
+    .loading-pulse {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.6rem;
+      background: var(--bg-subtle);
+      border-radius: var(--radius-md);
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .loading-pulse.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      animation: pulseBg 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulseBg {
+      0%, 100% { background: var(--bg-subtle); }
+      50% { background: var(--primary-50); color: var(--primary-600); }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESULT BOX (Modern Bright Glass/Card)
+       ═══════════════════════════════════════════════════════════ */
+    .result-container {
+      margin-top: 1.25rem;
+      display: none;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      background: #ffffff;
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+      animation: fadeInResult 0.3s ease;
+    }
+    .result-container.visible { display: block; }
+
+    @keyframes fadeInResult {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .result-heading {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .btn-action-tiny {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.15s ease;
+    }
+    .btn-action-tiny:hover {
+      background: var(--primary-50);
+      color: var(--primary-600);
+      border-color: var(--primary-100);
+    }
+
+    .result-output-text {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: var(--text-main);
+      line-height: 1.6;
+      word-break: break-all;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .result-metadata-pills {
+      margin-top: 0.65rem;
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .meta-pill strong {
+      font-family: var(--font-mono);
+      color: var(--primary-600);
+    }
+
+    .error-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.75rem;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PLAYFAIR 5x5 MATRIX VISUALIZER
+       ═══════════════════════════════════════════════════════════ */
+    .playfair-matrix-box {
+      margin-top: 1rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.85rem;
+    }
+
+    .matrix-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .playfair-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+
+    .matrix-cell {
+      background: #ffffff;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      transition: background 0.15s ease;
+    }
+
+    .matrix-cell.key-cell {
+      background: var(--primary-50);
+      color: var(--primary-700);
+      border-color: var(--primary-500);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ANALYTICS & EXPERIMENT TABLES (Tab 4)
+       ═══════════════════════════════════════════════════════════ */
+    .stats-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .metric-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .metric-details h4 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .metric-details .metric-number {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 0.1rem;
+    }
+
+    .metric-details .metric-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Data Table Card */
+    .table-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 1.75rem;
+    }
+
+    .table-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .table-card-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .custom-table th {
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.78rem;
+    }
+
+    .custom-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--bg-subtle);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+    }
+
+    .custom-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+
+    /* Percentage Badge */
+    .pct-pill {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .pct-pill.high { background: #dcfce7; color: #166534; }
+    .pct-pill.mid  { background: #fef9c3; color: #854d0e; }
+    .pct-pill.low  { background: #fee2e2; color: #991b1b; }
+
+    /* ═══════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════ */
+    .app-footer {
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
+      padding: 1.5rem 1.5rem;
+      margin-top: auto;
+      text-align: center;
+    }
+
+    .footer-content {
+      max-width: 1360px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .footer-link {
+      color: var(--primary-600);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-link:hover { text-decoration: underline; }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.65rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-xl);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s ease;
+      pointer-events: none;
+    }
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════ HEADER ════════════════════════════════════ -->
-<header class="site-header">
-  <div class="header-ornament">✦ ✦ ✦</div>
-  <div class="header-seal">🔏</div>
-  <h1 class="main-title">CRYPTANALYSIS TOOLKIT</h1>
-  <p class="main-subtitle">Classical Cipher Analysis · Caesar · Vigenère · Playfair</p>
-  <p class="main-tagline">An toàn Thông tin — Thám mã Mật mã Cổ điển</p>
-  <div class="header-divider"></div>
-</header>
-
-<!-- ════════════════════════════════════ TABS ════════════════════════════════════ -->
-<nav class="cipher-nav">
-  <button class="tab-btn active" onclick="switchTab('caesar', this)">
-    <span class="tab-numeral">CAES · I</span>
-    <span>Caesar Cipher</span>
-  </button>
-  <button class="tab-btn" onclick="switchTab('vigenere', this)">
-    <span class="tab-numeral">VIG · II</span>
-    <span>Vigenère Cipher</span>
-  </button>
-  <button class="tab-btn" onclick="switchTab('playfair', this)">
-    <span class="tab-numeral">PLAY · III</span>
-    <span>Playfair Cipher</span>
-  </button>
-</nav>
-
-<!-- ════════════════════════════════════ MAIN ════════════════════════════════════ -->
-<main class="main-content">
-
-  <!-- ────────────────── CAESAR PANEL ────────────────── -->
-  <section class="cipher-panel active" id="panel-caesar">
-    <div class="panel-header">
-      <h2 class="panel-title">CAESAR CIPHER</h2>
-      <p class="panel-desc">Mã dịch chuyển đơn giản — Julius Caesar, ~100 B.C. · Brute-force 25 khóa + Chi-squared scoring</p>
+  <!-- ═══════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="brand-group">
+        <div class="brand-icon">🛡️</div>
+        <div class="brand-text">
+          <h1>Cryptanalysis Toolkit <span style="font-weight:400; color:var(--text-light); font-size:1rem;">| Demo Lab</span></h1>
+          <p>Hệ thống tự động mã hóa, giải mã và thám mã mật mã cổ điển</p>
+        </div>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span>Lab Sẵn Sàng (19/19 Tests Pass)</span>
+      </div>
     </div>
 
-    <div class="action-grid">
-      <!-- Encrypt -->
-      <div class="action-card card-type-encrypt">
-        <h3 class="card-title"><span class="card-icon">🔒</span> MÃ HÓA</h3>
-        <div class="form-group">
-          <label>Văn bản gốc (Plaintext)</label>
-          <textarea id="c-enc-text" placeholder="THEQUICKBROWNFOX..."></textarea>
+    <!-- Navigation Tabs -->
+    <nav class="tab-navigation">
+      <button class="nav-tab-btn active" onclick="switchView('caesar', this)">
+        <span>🏛️ Caesar Cipher</span>
+        <span class="tab-badge">Shift $k$</span>
+      </button>
+      <button class="nav-tab-btn" onclick="switchView('vigenere', this)">
+        <span>🔠 Vigenère Cipher</span>
+        <span class="tab-badge">Polyalphabetic</span>
+      </button>
+      <button class="nav-tab-btn" onclick="switchView('playfair', this)">
+        <span>▦ Playfair Cipher</span>
+        <span class="tab-badge">5×5 Matrix</span>
+      </button>
+      <button class="nav-tab-btn" onclick="switchView('analytics', this)">
+        <span>📊 Báo Cáo Thực Nghiệm</span>
+        <span class="tab-badge">Benchmarks</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN CONTENT CONTAINER
+       ═══════════════════════════════════════════════════════════ -->
+  <main class="main-container">
+
+    <!-- ─────────────────────────────────────────────────────────
+         VIEW 1: CAESAR CIPHER
+         ───────────────────────────────────────────────────────── -->
+    <section class="cipher-view active" id="view-caesar">
+      <!-- Hero Banner -->
+      <div class="view-hero">
+        <div class="hero-info">
+          <h2>🏛️ Mật Mã Caesar (Caesar Shift Cipher)</h2>
+          <p>Thuật toán dịch chuyển vòng bảng chữ cái đơn vị $k \in [0, 25]$. Tự động thám mã bằng Brute-force 25 khóa kết hợp kiểm định Chi-squared ($\chi^2$).</p>
         </div>
-        <div class="form-row">
+        <div class="hero-tags">
+          <span class="hero-tag">Không gian khóa: 26</span>
+          <span class="hero-tag">Độ phức tạp: $\mathcal{O}(26 \times L)$</span>
+          <span class="hero-tag">Độ chính xác: 100% ($L \ge 100$)</span>
+        </div>
+      </div>
+
+      <!-- 3 Action Cards -->
+      <div class="action-grid">
+        <!-- 1. Encrypt Card -->
+        <div class="action-card card-encrypt">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">🔒</div>
+              <h3 class="card-title">Mã Hóa (Encrypt)</h3>
+            </div>
+            <span class="card-desc-badge">$C = (P + k) \bmod 26$</span>
+          </div>
+
           <div class="form-group">
-            <label>Khóa — Shift (1–25)</label>
-            <input type="number" id="c-enc-key" value="3" min="1" max="25">
+            <div class="input-helper-bar">
+              <label class="input-label" for="c-enc-text">Văn bản gốc (Plaintext)</label>
+              <button class="sample-btn" onclick="loadSample('c-enc-text', 'caesar')">📄 Nạp văn bản mẫu</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="c-enc-text" class="code-input" placeholder="Nhập văn bản cần mã hóa..." oninput="updateCharCount('c-enc-text', 'c-enc-cnt')">THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG AND CREATES A BEAUTIFUL SECRET MESSAGE</textarea>
+              <div class="char-counter" id="c-enc-cnt">Độ dài: 82 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="slider-box">
+              <div class="slider-header">
+                <span>Khóa dịch chuyển ($k$ Shift):</span>
+                <span class="slider-value-pill" id="c-enc-key-val">k = 3 (ROT-3)</span>
+              </div>
+              <input type="range" id="c-enc-key" min="1" max="25" value="3" oninput="document.getElementById('c-enc-key-val').textContent = 'k = ' + this.value;">
+            </div>
+          </div>
+
+          <button class="btn-submit btn-encrypt-style" onclick="doAction('caesar', 'encrypt')">
+            <span>🔒 Thực Hiện Mã Hóa</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-caesar-encrypt">⏳ Đang xử lý mã hóa...</div>
+          <div class="result-container" id="rb-caesar-encrypt"></div>
+        </div>
+
+        <!-- 2. Decrypt Card -->
+        <div class="action-card card-decrypt">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">🔓</div>
+              <h3 class="card-title">Giải Mã (Decrypt)</h3>
+            </div>
+            <span class="card-desc-badge">$P = (C - k) \bmod 26$</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="c-dec-text">Văn bản mật mã (Ciphertext)</label>
+              <button class="sample-btn" onclick="pasteFromOther('rb-caesar-encrypt', 'c-dec-text')">📋 Lấy từ Mã hóa</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="c-dec-text" class="code-input" placeholder="Nhập ciphertext và khóa k để giải mã..." oninput="updateCharCount('c-dec-text', 'c-dec-cnt')">WKH TXLFN EURZQ IRA MXPSV RYHU WKH ODCB GRJ DQG FUHDWHV D EHDXWLIXO VHFUHW PHVVDJH</textarea>
+              <div class="char-counter" id="c-dec-cnt">Độ dài: 82 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="slider-box">
+              <div class="slider-header">
+                <span>Khóa dịch chuyển ($k$ Shift):</span>
+                <span class="slider-value-pill" id="c-dec-key-val">k = 3</span>
+              </div>
+              <input type="range" id="c-dec-key" min="1" max="25" value="3" oninput="document.getElementById('c-dec-key-val').textContent = 'k = ' + this.value;">
+            </div>
+          </div>
+
+          <button class="btn-submit btn-decrypt-style" onclick="doAction('caesar', 'decrypt')">
+            <span>🔓 Thực Hiện Giải Mã</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-caesar-decrypt">⏳ Đang xử lý giải mã...</div>
+          <div class="result-container" id="rb-caesar-decrypt"></div>
+        </div>
+
+        <!-- 3. Attack Card -->
+        <div class="action-card card-attack">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">⚔️</div>
+              <h3 class="card-title">Thám Mã Tự Động (Attack)</h3>
+            </div>
+            <span class="card-desc-badge">Chi-squared Test</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="c-atk-text">Ciphertext (Không cần biết khóa)</label>
+              <button class="sample-btn" onclick="pasteFromOther('rb-caesar-encrypt', 'c-atk-text')">📋 Lấy từ Mã hóa</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="c-atk-text" class="code-input" placeholder="Nhập ciphertext bí ẩn..." style="min-height: 120px;" oninput="updateCharCount('c-atk-text', 'c-atk-cnt')">WKH TXLFN EURZQ IRA MXPSV RYHU WKH ODCB GRJ DQG FUHDWHV D EHDXWLIXO VHFUHW PHVVDJH</textarea>
+              <div class="char-counter" id="c-atk-cnt">Độ dài: 82 ký tự</div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-subtle); border-radius:var(--radius-md); padding:0.75rem; margin-bottom:1.1rem; font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">
+            💡 <strong>Thuật toán:</strong> Thử nghiệm song song 25 khóa dịch chuyển, tính điểm $\chi^2$ so với tần suất phân bố 26 chữ cái tiếng Anh chuẩn. Khóa có $\chi^2$ nhỏ nhất sẽ được chọn.
+          </div>
+
+          <button class="btn-submit btn-attack-style" onclick="doAction('caesar', 'attack')">
+            <span>⚔️ Tự Động Phá Khóa Caesar</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-caesar-attack">⚡ Đang quét brute-force 25 khóa & tính Chi-squared...</div>
+          <div class="result-container" id="rb-caesar-attack"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────────────────────────
+         VIEW 2: VIGENÈRE CIPHER
+         ───────────────────────────────────────────────────────── -->
+    <section class="cipher-view" id="view-vigenere">
+      <!-- Hero Banner -->
+      <div class="view-hero">
+        <div class="hero-info">
+          <h2>🔠 Mật Mã Vigenère (Polyalphabetic Substitution)</h2>
+          <p>Mật mã đa bảng chữ cái dùng từ khóa lặp lại $K = (k_0, k_1, \dots, k_{m-1})$. Phá mã 2 giai đoạn: Ước lượng độ dài khóa $m$ bằng Index of Coincidence (IC) + Phá $m$ cột Caesar độc lập.</p>
+        </div>
+        <div class="hero-tags">
+          <span class="hero-tag">Không gian khóa: $26^m$</span>
+          <span class="hero-tag">Thám mã: IC + Bigram Ranking</span>
+          <span class="hero-tag">Độ chính xác: ~95% ($L \ge 500$)</span>
+        </div>
+      </div>
+
+      <!-- 3 Action Cards -->
+      <div class="action-grid">
+        <!-- 1. Encrypt Card -->
+        <div class="action-card card-encrypt">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">🔒</div>
+              <h3 class="card-title">Mã Hóa (Encrypt)</h3>
+            </div>
+            <span class="card-desc-badge">$C_i = (P_i + K_{i \bmod m}) \bmod 26$</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="v-enc-text">Văn bản gốc (Plaintext)</label>
+              <button class="sample-btn" onclick="loadSample('v-enc-text', 'vigenere')">📄 Nạp văn bản mẫu</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="v-enc-text" class="code-input" placeholder="Nhập văn bản cần mã hóa..." oninput="updateCharCount('v-enc-text', 'v-enc-cnt')">CRYPTOGRAPHY IS THE PRACTICE AND STUDY OF TECHNIQUES FOR SECURE COMMUNICATION IN THE PRESENCE OF ADVERSARIES. VIGENERE CIPHER WAS ONCE CONSIDERED UNBREAKABLE.</textarea>
+              <div class="char-counter" id="v-enc-cnt">Độ dài: 172 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label" for="v-enc-key">Từ khóa (Secret Key — A-Z)</label>
+            <input type="text" id="v-enc-key" class="code-input" value="CIPHER" placeholder="Vd: SECRET, CIPHER..." style="text-transform:uppercase; font-weight:700; letter-spacing:0.1em;">
+          </div>
+
+          <button class="btn-submit btn-encrypt-style" onclick="doAction('vigenere', 'encrypt')">
+            <span>🔒 Thực Hiện Mã Hóa Vigenère</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-vigenere-encrypt">⏳ Đang xử lý mã hóa...</div>
+          <div class="result-container" id="rb-vigenere-encrypt"></div>
+        </div>
+
+        <!-- 2. Decrypt Card -->
+        <div class="action-card card-decrypt">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">🔓</div>
+              <h3 class="card-title">Giải Mã (Decrypt)</h3>
+            </div>
+            <span class="card-desc-badge">$P_i = (C_i - K_{i \bmod m}) \bmod 26$</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="v-dec-text">Văn bản mật mã (Ciphertext)</label>
+              <button class="sample-btn" onclick="pasteFromOther('rb-vigenere-encrypt', 'v-dec-text')">📋 Lấy từ Mã hóa</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="v-dec-text" class="code-input" placeholder="Nhập ciphertext cần giải mã..." oninput="updateCharCount('v-dec-text', 'v-dec-cnt')"></textarea>
+              <div class="char-counter" id="v-dec-cnt">Độ dài: 0 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label" for="v-dec-key">Từ khóa giải mã (Key)</label>
+            <input type="text" id="v-dec-key" class="code-input" value="CIPHER" placeholder="Nhập khóa..." style="text-transform:uppercase; font-weight:700; letter-spacing:0.1em;">
+          </div>
+
+          <button class="btn-submit btn-decrypt-style" onclick="doAction('vigenere', 'decrypt')">
+            <span>🔓 Thực Hiện Giải Mã Vigenère</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-vigenere-decrypt">⏳ Đang xử lý giải mã...</div>
+          <div class="result-container" id="rb-vigenere-decrypt"></div>
+        </div>
+
+        <!-- 3. Attack Card -->
+        <div class="action-card card-attack">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">⚔️</div>
+              <h3 class="card-title">Thám Mã Tự Động (Attack)</h3>
+            </div>
+            <span class="card-desc-badge">Index of Coincidence</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="v-atk-text">Ciphertext (Khuyến nghị $L \ge 100$)</label>
+              <button class="sample-btn" onclick="pasteFromOther('rb-vigenere-encrypt', 'v-atk-text')">📋 Lấy từ Mã hóa</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="v-atk-text" class="code-input" placeholder="Dán ciphertext cần phá..." style="min-height:120px;" oninput="updateCharCount('v-atk-text', 'v-atk-cnt')"></textarea>
+              <div class="char-counter" id="v-atk-cnt">Độ dài: 0 ký tự</div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-subtle); border-radius:var(--radius-md); padding:0.75rem; margin-bottom:1.1rem; font-size:0.75rem; color:var(--text-secondary); line-height:1.4;">
+            💡 <strong>Quy trình:</strong> 
+            1. Tính $\text{IC}$ với độ dài thử $m \in [1, 20]$.<br>
+            2. Tách thành $m$ chuỗi con, giải dot-product với tần suất tiếng Anh.<br>
+            3. Xếp hạng tổ hợp khóa bằng Bigram log-likelihood score.
+          </div>
+
+          <button class="btn-submit btn-attack-style" onclick="doAction('vigenere', 'attack')">
+            <span>⚔️ Tự Động Ước Lượng Khóa & Phá Mã</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-vigenere-attack">⚡ Đang tính toán IC & phân tích tần suất đa bảng...</div>
+          <div class="result-container" id="rb-vigenere-attack"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────────────────────────
+         VIEW 3: PLAYFAIR CIPHER
+         ───────────────────────────────────────────────────────── -->
+    <section class="cipher-view" id="view-playfair">
+      <!-- Hero Banner -->
+      <div class="view-hero">
+        <div class="hero-info">
+          <h2>▦ Mật Mã Playfair (Digram 5×5 Matrix Cipher)</h2>
+          <p>Hệ mật mã hóa theo từng cặp ký tự (Digram) dựa trên ma trận hoán vị 25 ký tự (gộp I/J). Thuật toán thám mã hiện đại sử dụng <strong>Simulated Annealing (Luyện kim mô phỏng)</strong> kết hợp Random Restarts.</p>
+        </div>
+        <div class="hero-tags">
+          <span class="hero-tag">Không gian khóa: $25! \approx 1.55 \times 10^{25}$</span>
+          <span class="hero-tag">Simulated Annealing ($T: 20 \to 0.05$)</span>
+          <span class="hero-tag">Fitness: Non-overlapping Bigram Score</span>
+        </div>
+      </div>
+
+      <!-- 3 Action Cards -->
+      <div class="action-grid">
+        <!-- 1. Encrypt Card -->
+        <div class="action-card card-encrypt">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">🔒</div>
+              <h3 class="card-title">Mã Hóa (Encrypt)</h3>
+            </div>
+            <span class="card-desc-badge">Ma trận $5 \times 5$</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="p-enc-text">Văn bản gốc (Plaintext)</label>
+              <button class="sample-btn" onclick="loadSample('p-enc-text', 'playfair')">📄 Nạp văn bản mẫu</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="p-enc-text" class="code-input" placeholder="Nhập văn bản cần mã hóa Playfair..." oninput="updateCharCount('p-enc-text', 'p-enc-cnt')">HIDE THE GOLD IN THE TREE STUMP AND MEET AT NOON</textarea>
+              <div class="char-counter" id="p-enc-cnt">Độ dài: 46 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label" for="p-enc-key">Từ khóa tạo ma trận (Keyword)</label>
+            <input type="text" id="p-enc-key" class="code-input" value="MONARCHY" placeholder="Vd: MONARCHY, PLAYFAIR..." style="text-transform:uppercase; font-weight:700; letter-spacing:0.1em;" oninput="renderPlayfairMatrix('p-enc-key', 'grid-enc')">
+          </div>
+
+          <!-- Interactive 5x5 Matrix Preview -->
+          <div class="playfair-matrix-box">
+            <div class="matrix-title">
+              <span>Bảng Ma Trận Khóa 5×5 (J $\to$ I)</span>
+            </div>
+            <div class="playfair-grid" id="grid-enc"></div>
+          </div>
+
+          <button class="btn-submit btn-encrypt-style" style="margin-top:1rem;" onclick="doAction('playfair', 'encrypt')">
+            <span>🔒 Thực Hiện Mã Hóa Playfair</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-playfair-encrypt">⏳ Đang xử lý mã hóa Playfair...</div>
+          <div class="result-container" id="rb-playfair-encrypt"></div>
+        </div>
+
+        <!-- 2. Decrypt Card -->
+        <div class="action-card card-decrypt">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">🔓</div>
+              <h3 class="card-title">Giải Mã (Decrypt)</h3>
+            </div>
+            <span class="card-desc-badge">Ma trận $5 \times 5$</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="p-dec-text">Văn bản mật mã (Ciphertext)</label>
+              <button class="sample-btn" onclick="pasteFromOther('rb-playfair-encrypt', 'p-dec-text')">📋 Lấy từ Mã hóa</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="p-dec-text" class="code-input" placeholder="Nhập ciphertext..." oninput="updateCharCount('p-dec-text', 'p-dec-cnt')"></textarea>
+              <div class="char-counter" id="p-dec-cnt">Độ dài: 0 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label" for="p-dec-key">Từ khóa giải mã (Keyword)</label>
+            <input type="text" id="p-dec-key" class="code-input" value="MONARCHY" placeholder="Nhập khóa..." style="text-transform:uppercase; font-weight:700; letter-spacing:0.1em;" oninput="renderPlayfairMatrix('p-dec-key', 'grid-dec')">
+          </div>
+
+          <!-- Interactive 5x5 Matrix Preview -->
+          <div class="playfair-matrix-box">
+            <div class="matrix-title">
+              <span>Bảng Ma Trận Khóa 5×5 (J $\to$ I)</span>
+            </div>
+            <div class="playfair-grid" id="grid-dec"></div>
+          </div>
+
+          <button class="btn-submit btn-decrypt-style" style="margin-top:1rem;" onclick="doAction('playfair', 'decrypt')">
+            <span>🔓 Thực Hiện Giải Mã Playfair</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-playfair-decrypt">⏳ Đang xử lý giải mã...</div>
+          <div class="result-container" id="rb-playfair-decrypt"></div>
+        </div>
+
+        <!-- 3. Attack Card -->
+        <div class="action-card card-attack">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-badge">⚔️</div>
+              <h3 class="card-title">Thám Mã Tự Động (Attack)</h3>
+            </div>
+            <span class="card-desc-badge">Simulated Annealing</span>
+          </div>
+
+          <div class="form-group">
+            <div class="input-helper-bar">
+              <label class="input-label" for="p-atk-text">Ciphertext (Khuyến nghị $L \ge 200$)</label>
+              <button class="sample-btn" onclick="pasteFromOther('rb-playfair-encrypt', 'p-atk-text')">📋 Lấy từ Mã hóa</button>
+            </div>
+            <div class="textarea-wrapper">
+              <textarea id="p-atk-text" class="code-input" placeholder="Dán ciphertext Playfair cần thám mã..." style="min-height:95px;" oninput="updateCharCount('p-atk-text', 'p-atk-cnt')"></textarea>
+              <div class="char-counter" id="p-atk-cnt">Độ dài: 0 ký tự</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="slider-box">
+              <div class="slider-header">
+                <span>Số Vòng Lặp Luyện Kim (Iterations):</span>
+                <span class="slider-value-pill" id="sl-iter-val">3,000</span>
+              </div>
+              <input type="range" id="sl-iter" min="500" max="10000" step="500" value="3000" oninput="document.getElementById('sl-iter-val').textContent = Number(this.value).toLocaleString();">
+            </div>
+
+            <div class="slider-box" style="margin-bottom:0.5rem;">
+              <div class="slider-header">
+                <span>Khởi động lại ngẫu nhiên (Restarts):</span>
+                <span class="slider-value-pill" id="sl-rest-val">5 lần</span>
+              </div>
+              <input type="range" id="sl-rest" min="1" max="15" step="1" value="5" oninput="document.getElementById('sl-rest-val').textContent = this.value + ' lần';">
+            </div>
+          </div>
+
+          <button class="btn-submit btn-attack-style" onclick="doAction('playfair', 'attack')">
+            <span>⚔️ Luyện Kim Mô Phỏng Tìm Ma Trận</span>
+          </button>
+
+          <div class="loading-pulse" id="lb-playfair-attack">⚡ Đang tối ưu hóa hoán vị ma trận qua Simulated Annealing...</div>
+          <div class="result-container" id="rb-playfair-attack"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────────────────────────
+         VIEW 4: BENCHMARK & ANALYTICS
+         ───────────────────────────────────────────────────────── -->
+    <section class="cipher-view" id="view-analytics">
+      <!-- Hero Banner -->
+      <div class="view-hero">
+        <div class="hero-info">
+          <h2>📊 Báo Cáo & Dữ Liệu Thực Nghiệm Toàn Diện</h2>
+          <p>Tổng hợp kết quả đo đạc tốc độ xử lý (ms), tỷ lệ bẻ khóa chính xác (%) trên nhiều cấu hình độ dài văn bản $L \in [50, 100, 500, 1000]$ và độ dài khóa.</p>
+        </div>
+        <div class="hero-tags">
+          <button class="sample-btn" style="background:#ffffff; border:1px solid var(--border-subtle); padding:0.4rem 0.8rem; font-size:0.78rem;" onclick="loadStats()">🔄 Cập nhật dữ liệu</button>
+        </div>
+      </div>
+
+      <!-- Top Summary Metric Cards -->
+      <div class="stats-overview-grid">
+        <div class="metric-card">
+          <div class="metric-icon-wrap" style="background:#e0f2fe; color:#0284c7;">🏛️</div>
+          <div class="metric-details">
+            <h4>Caesar Chi-squared</h4>
+            <div class="metric-number">100%</div>
+            <div class="metric-sub">Độ chính xác hoàn hảo khi $L \ge 100$</div>
           </div>
         </div>
-        <button class="action-btn btn-encrypt" onclick="doAction('caesar','encrypt')">
-          ⚙ Mã Hóa
-        </button>
-        <div class="loading-bar" id="lb-caesar-encrypt"></div>
-        <div class="result-box" id="rb-caesar-encrypt"></div>
-      </div>
 
-      <!-- Decrypt -->
-      <div class="action-card card-type-decrypt">
-        <h3 class="card-title"><span class="card-icon">🔓</span> GIẢI MÃ</h3>
-        <div class="form-group">
-          <label>Văn bản mật mã (Ciphertext)</label>
-          <textarea id="c-dec-text" placeholder="WKHTXLFNEURZQIRA..."></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Khóa — Shift (1–25)</label>
-            <input type="number" id="c-dec-key" value="3" min="1" max="25">
+        <div class="metric-card">
+          <div class="metric-icon-wrap" style="background:#ede9fe; color:#7c3aed;">🔠</div>
+          <div class="metric-details">
+            <h4>Vigenère IC Recovery</h4>
+            <div class="metric-number">&lt; 15 ms</div>
+            <div class="metric-sub">Tốc độ ước lượng khóa cực nhanh</div>
           </div>
         </div>
-        <button class="action-btn btn-decrypt" onclick="doAction('caesar','decrypt')">
-          ⚙ Giải Mã
-        </button>
-        <div class="loading-bar" id="lb-caesar-decrypt"></div>
-        <div class="result-box" id="rb-caesar-decrypt"></div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap" style="background:#ecfdf5; color:#059669;">▦</div>
+          <div class="metric-details">
+            <h4>Playfair Annealing</h4>
+            <div class="metric-number">25! Keys</div>
+            <div class="metric-sub">Hội tụ tối ưu qua Bigram Score</div>
+          </div>
+        </div>
       </div>
 
-      <!-- Attack -->
-      <div class="action-card card-type-attack">
-        <h3 class="card-title"><span class="card-icon">⚔</span> PHÁ MÃ TỰ ĐỘNG</h3>
-        <p class="method-badge">Brute-force 25 keys · Chi-squared frequency analysis</p>
-        <div class="form-group">
-          <label>Văn bản mật mã (không cần biết khóa)</label>
-          <textarea id="c-atk-text" placeholder="Nhập ciphertext cần phá..."></textarea>
+      <!-- Caesar Table -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>🏛️ Kết Quả Thử Nghiệm: Caesar Cipher (Brute-force + Chi-squared)</h3>
+          <span class="hero-tag">experiments/results/caesar_results.csv</span>
         </div>
-        <button class="action-btn btn-attack" onclick="doAction('caesar','attack')">
-          ⚔ Phá Mã Tự Động
-        </button>
-        <div class="loading-bar" id="lb-caesar-attack"></div>
-        <div class="result-box" id="rb-caesar-attack"></div>
-      </div>
-    </div>
-
-    <!-- Caesar Stats -->
-    <div class="stats-section">
-      <p class="stats-title">⸻ KẾT QUẢ THỰC NGHIỆM ⸻</p>
-      <div class="stats-grid">
-        <div class="stats-card">
-          <p class="stats-card-title">CAESAR — Tỷ lệ phá mã theo độ dài văn bản</p>
-          <table class="stats-table" id="tbl-caesar"></table>
+        <div style="overflow-x:auto;">
+          <table class="custom-table" id="tbl-caesar">
+            <thead><tr><th>Đang tải dữ liệu...</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ────────────────── VIGENÈRE PANEL ────────────────── -->
-  <section class="cipher-panel" id="panel-vigenere">
-    <div class="panel-header">
-      <h2 class="panel-title">VIGENÈRE CIPHER</h2>
-      <p class="panel-desc">Mã đa bảng thay thế — Blaise de Vigenère, 1586 · Index of Coincidence + Bigram scoring</p>
-    </div>
-
-    <div class="action-grid">
-      <!-- Encrypt -->
-      <div class="action-card card-type-encrypt">
-        <h3 class="card-title"><span class="card-icon">🔒</span> MÃ HÓA</h3>
-        <div class="form-group">
-          <label>Văn bản gốc (Plaintext)</label>
-          <textarea id="v-enc-text" placeholder="THEQUICKBROWNFOX..."></textarea>
+      <!-- Vigenère Table -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>🔠 Kết Quả Thử Nghiệm: Vigenère Cipher (IC + Caesar Decomposition)</h3>
+          <span class="hero-tag">experiments/results/vigenere_results.csv</span>
         </div>
-        <div class="form-group">
-          <label>Khóa (Key — chữ cái A–Z)</label>
-          <input type="text" id="v-enc-key" placeholder="KEY" style="text-transform:uppercase">
+        <div style="overflow-x:auto;">
+          <table class="custom-table" id="tbl-vigenere">
+            <thead><tr><th>Đang tải dữ liệu...</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <button class="action-btn btn-encrypt" onclick="doAction('vigenere','encrypt')">
-          ⚙ Mã Hóa
-        </button>
-        <div class="loading-bar" id="lb-vigenere-encrypt"></div>
-        <div class="result-box" id="rb-vigenere-encrypt"></div>
       </div>
 
-      <!-- Decrypt -->
-      <div class="action-card card-type-decrypt">
-        <h3 class="card-title"><span class="card-icon">🔓</span> GIẢI MÃ</h3>
-        <div class="form-group">
-          <label>Văn bản mật mã (Ciphertext)</label>
-          <textarea id="v-dec-text" placeholder="DIOEVRIENBCZN..."></textarea>
+      <!-- Playfair Table -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>▦ Kết Quả Thử Nghiệm: Playfair Cipher (Simulated Annealing)</h3>
+          <span class="hero-tag">experiments/results/playfair_results.csv</span>
         </div>
-        <div class="form-group">
-          <label>Khóa (Key — chữ cái A–Z)</label>
-          <input type="text" id="v-dec-key" placeholder="KEY" style="text-transform:uppercase">
+        <div style="overflow-x:auto;">
+          <table class="custom-table" id="tbl-playfair">
+            <thead><tr><th>Đang tải dữ liệu...</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <button class="action-btn btn-decrypt" onclick="doAction('vigenere','decrypt')">
-          ⚙ Giải Mã
-        </button>
-        <div class="loading-bar" id="lb-vigenere-decrypt"></div>
-        <div class="result-box" id="rb-vigenere-decrypt"></div>
       </div>
+    </section>
 
-      <!-- Attack -->
-      <div class="action-card card-type-attack">
-        <h3 class="card-title"><span class="card-icon">⚔</span> PHÁ MÃ TỰ ĐỘNG</h3>
-        <p class="method-badge">Index of Coincidence · Bigram log-likelihood</p>
-        <div class="form-group">
-          <label>Văn bản mật mã (không cần biết khóa — nên ≥ 100 ký tự)</label>
-          <textarea id="v-atk-text" placeholder="Nhập ciphertext cần phá..." style="min-height:100px"></textarea>
-        </div>
-        <button class="action-btn btn-attack" onclick="doAction('vigenere','attack')">
-          ⚔ Phá Mã Tự Động
-        </button>
-        <div class="loading-bar" id="lb-vigenere-attack"></div>
-        <div class="result-box" id="rb-vigenere-attack"></div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════ -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <div>
+        <strong>Cryptanalysis Toolkit v2.0</strong> — Đồ án môn An toàn Thông tin
+      </div>
+      <div class="footer-links">
+        <span>Nhóm thực hiện: <strong>Hưng</strong> • <strong>Nguyễn Ánh Duy</strong> • <strong>Minh Hiếu</strong></span>
+        <span>•</span>
+        <span>Môi trường: <strong>Python / Flask / Docker</strong></span>
       </div>
     </div>
+  </footer>
 
-    <!-- Vigenère Stats -->
-    <div class="stats-section">
-      <p class="stats-title">⸻ KẾT QUẢ THỰC NGHIỆM ⸻</p>
-      <div class="stats-grid">
-        <div class="stats-card" style="grid-column: 1 / -1">
-          <p class="stats-card-title">VIGENÈRE — Tỷ lệ phá mã theo độ dài văn bản × độ dài khóa</p>
-          <table class="stats-table" id="tbl-vigenere"></table>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Toast Element -->
+  <div class="toast-msg" id="app-toast">📋 Đã sao chép vào bộ nhớ tạm!</div>
 
-  <!-- ────────────────── PLAYFAIR PANEL ────────────────── -->
-  <section class="cipher-panel" id="panel-playfair">
-    <div class="panel-header">
-      <h2 class="panel-title">PLAYFAIR CIPHER</h2>
-      <p class="panel-desc">Mã digraph 5×5 — Charles Wheatstone, 1854 · Simulated Annealing + Non-overlapping digraph scoring</p>
-    </div>
+  <!-- ═══════════════════════════════════════════════════════════
+       JAVASCRIPT APPLICATION LOGIC
+       ═══════════════════════════════════════════════════════════ -->
+  <script>
+    // 1. Tab Navigation
+    function switchView(viewName, btnEl) {
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.cipher-view').forEach(v => v.classList.remove('active'));
+      
+      btnEl.classList.add('active');
+      const target = document.getElementById('view-' + viewName);
+      if (target) {
+        target.classList.add('active');
+      }
 
-    <div class="action-grid">
-      <!-- Encrypt -->
-      <div class="action-card card-type-encrypt">
-        <h3 class="card-title"><span class="card-icon">🔒</span> MÃ HÓA</h3>
-        <div class="form-group">
-          <label>Văn bản gốc (Plaintext — chỉ A–Z, tự động xử lý J→I)</label>
-          <textarea id="p-enc-text" placeholder="INSTRUMENTS..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Khóa (Key — từ khóa tạo bảng 5×5)</label>
-          <input type="text" id="p-enc-key" placeholder="MONARCHY" style="text-transform:uppercase">
-        </div>
-        <button class="action-btn btn-encrypt" onclick="doAction('playfair','encrypt')">
-          ⚙ Mã Hóa
-        </button>
-        <div class="loading-bar" id="lb-playfair-encrypt"></div>
-        <div class="result-box" id="rb-playfair-encrypt"></div>
-      </div>
-
-      <!-- Decrypt -->
-      <div class="action-card card-type-decrypt">
-        <h3 class="card-title"><span class="card-icon">🔓</span> GIẢI MÃ</h3>
-        <div class="form-group">
-          <label>Văn bản mật mã (Ciphertext)</label>
-          <textarea id="p-dec-text" placeholder="GATLMZCLRQXA..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Khóa (Key — từ khóa tạo bảng 5×5)</label>
-          <input type="text" id="p-dec-key" placeholder="MONARCHY" style="text-transform:uppercase">
-        </div>
-        <button class="action-btn btn-decrypt" onclick="doAction('playfair','decrypt')">
-          ⚙ Giải Mã
-        </button>
-        <div class="loading-bar" id="lb-playfair-decrypt"></div>
-        <div class="result-box" id="rb-playfair-decrypt"></div>
-      </div>
-
-      <!-- Attack -->
-      <div class="action-card card-type-attack">
-        <h3 class="card-title"><span class="card-icon">⚔</span> PHÁ MÃ TỰ ĐỘNG</h3>
-        <p class="method-badge">Simulated Annealing · Non-overlapping digraph · Random Restart</p>
-        <div class="form-group">
-          <label>Văn bản mật mã (không cần khóa — khuyến nghị ≥ 200 ký tự)</label>
-          <textarea id="p-atk-text" placeholder="Nhập ciphertext cần phá..." style="min-height:100px"></textarea>
-        </div>
-        <div class="slider-group">
-          <label>
-            Iterations (số vòng lặp SA)
-            <span class="slider-value" id="sv-iter">2000</span>
-          </label>
-          <input type="range" id="sl-iter" min="500" max="10000" step="500" value="2000"
-                 oninput="document.getElementById('sv-iter').textContent=this.value">
-        </div>
-        <div class="slider-group">
-          <label>
-            Restarts (số lần khởi động lại)
-            <span class="slider-value" id="sv-rest">5</span>
-          </label>
-          <input type="range" id="sl-rest" min="1" max="15" step="1" value="5"
-                 oninput="document.getElementById('sv-rest').textContent=this.value">
-        </div>
-        <button class="action-btn btn-attack" onclick="doAction('playfair','attack')">
-          ⚔ Phá Mã Tự Động
-        </button>
-        <div class="loading-bar" id="lb-playfair-attack"></div>
-        <div class="result-box" id="rb-playfair-attack"></div>
-      </div>
-    </div>
-
-    <!-- Playfair Stats -->
-    <div class="stats-section">
-      <p class="stats-title">⸻ KẾT QUẢ THỰC NGHIỆM ⸻</p>
-      <div class="stats-grid">
-        <div class="stats-card">
-          <p class="stats-card-title">PLAYFAIR — Độ chính xác theo độ dài văn bản</p>
-          <table class="stats-table" id="tbl-playfair"></table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<!-- ════════════════════════════════════ FOOTER ════════════════════════════════════ -->
-<footer class="site-footer">
-  <p class="footer-ornament">⸻ ✦ ⸻</p>
-  <p class="footer-text">
-    Cryptanalysis Toolkit · An toàn Thông tin ·
-    <em>Caesar · Vigenère · Playfair</em>
-  </p>
-  <p class="footer-text" style="margin-top:0.4rem">
-    19 unit tests · Simulated Annealing · Index of Coincidence · Chi-squared
-  </p>
-</footer>
-
-<script>
-// ═══════════════════════════════════════════════════════════
-//  TAB SWITCHING
-// ═══════════════════════════════════════════════════════════
-function switchTab(cipher, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.cipher-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('panel-' + cipher).classList.add('active');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  COLLECT PAYLOAD
-// ═══════════════════════════════════════════════════════════
-function getPayload(cipher, op) {
-  const p = {};
-  if (cipher === 'caesar') {
-    if (op === 'encrypt') { p.text = document.getElementById('c-enc-text').value; p.key = document.getElementById('c-enc-key').value; }
-    if (op === 'decrypt') { p.text = document.getElementById('c-dec-text').value; p.key = document.getElementById('c-dec-key').value; }
-    if (op === 'attack')  { p.text = document.getElementById('c-atk-text').value; }
-  } else if (cipher === 'vigenere') {
-    if (op === 'encrypt') { p.text = document.getElementById('v-enc-text').value; p.key = document.getElementById('v-enc-key').value; }
-    if (op === 'decrypt') { p.text = document.getElementById('v-dec-text').value; p.key = document.getElementById('v-dec-key').value; }
-    if (op === 'attack')  { p.text = document.getElementById('v-atk-text').value; }
-  } else if (cipher === 'playfair') {
-    if (op === 'encrypt') { p.text = document.getElementById('p-enc-text').value; p.key = document.getElementById('p-enc-key').value; }
-    if (op === 'decrypt') { p.text = document.getElementById('p-dec-text').value; p.key = document.getElementById('p-dec-key').value; }
-    if (op === 'attack')  {
-      p.text = document.getElementById('p-atk-text').value;
-      p.iterations = parseInt(document.getElementById('sl-iter').value);
-      p.restarts   = parseInt(document.getElementById('sl-rest').value);
+      if (viewName === 'analytics') {
+        loadStats();
+      }
     }
-  }
-  return p;
-}
 
-// ═══════════════════════════════════════════════════════════
-//  MAIN ACTION HANDLER
-// ═══════════════════════════════════════════════════════════
-async function doAction(cipher, op) {
-  const rbId = `rb-${cipher}-${op}`;
-  const lbId = `lb-${cipher}-${op}`;
-  const rb = document.getElementById(rbId);
-  const lb = document.getElementById(lbId);
-  const payload = getPayload(cipher, op);
-
-  // Show loading
-  lb.style.display = 'block';
-  rb.classList.remove('visible');
-  rb.innerHTML = '';
-
-  // Disable the button
-  const btns = document.querySelectorAll(`#panel-${cipher} .action-btn`);
-  btns.forEach(b => b.disabled = true);
-
-  try {
-    const res = await fetch(`/api/${cipher}/${op}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-
-    lb.style.display = 'none';
-    rb.classList.add('visible');
-
-    if (data.error) {
-      rb.innerHTML = `<div class="error-text">⚠ ${data.error}</div>`;
-    } else {
-      renderResult(rb, data, cipher, op);
+    // 2. Character Counter
+    function updateCharCount(inputId, counterId) {
+      const input = document.getElementById(inputId);
+      const counter = document.getElementById(counterId);
+      if (input && counter) {
+        const cleanLen = input.value.replace(/[^a-zA-Z]/g, '').length;
+        const totalLen = input.value.length;
+        counter.textContent = `Độ dài: ${cleanLen} chữ cái (Tổng ${totalLen} ký tự)`;
+      }
     }
-  } catch(e) {
-    lb.style.display = 'none';
-    rb.classList.add('visible');
-    rb.innerHTML = `<div class="error-text">⚠ Lỗi kết nối server: ${e.message}</div>`;
-  } finally {
-    btns.forEach(b => b.disabled = false);
-  }
-}
 
-// ═══════════════════════════════════════════════════════════
-//  RENDER RESULT
-// ═══════════════════════════════════════════════════════════
-function renderResult(rb, data, cipher, op) {
-  const result = data.result || '';
-  const id = `res-${cipher}-${op}`;
+    // 3. Sample Corpus Library
+    const SAMPLES = {
+      caesar: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG AND DISCOVERS THAT CLASSICAL CRYPTOGRAPHY HAS FASCINATING HISTORICAL ROOTS IN DEFENDING VALUABLE MILITARY COMMUNICATIONS.",
+      vigenere: "CRYPTOGRAPHY IS THE PRACTICE AND STUDY OF TECHNIQUES FOR SECURE COMMUNICATION IN THE PRESENCE OF ADVERSARIES. VIGENERE CIPHER WAS INVENTED CENTURIES AGO AND PROVIDES POLYALPHABETIC ENCRYPTION.",
+      playfair: "IT IS A TRUTH UNIVERSALLY ACKNOWLEDGED THAT A SINGLE MAN IN POSSESSION OF A GOOD FORTUNE MUST BE IN WANT OF A WIFE AND HENCE THEY MET AT NOON TO DELIVER THE SECRET MESSAGE."
+    };
 
-  let chips = `<div class="result-meta">`;
-  chips += `<div class="meta-chip">⏱ <span>${data.time_ms} ms</span></div>`;
-
-  if (op === 'attack' || op === 'encrypt' || op === 'decrypt') {
-    if (data.key !== undefined) {
-      const keyLabel = cipher === 'caesar' ? `shift = ${data.key}` : `key = ${data.key}`;
-      chips += `<div class="meta-chip">🗝 <span>${keyLabel}</span></div>`;
+    function loadSample(targetInputId, cipherType) {
+      const el = document.getElementById(targetInputId);
+      if (el && SAMPLES[cipherType]) {
+        el.value = SAMPLES[cipherType];
+        // Trigger char counter
+        const cntId = targetInputId.replace('-text', '-cnt');
+        updateCharCount(targetInputId, cntId);
+        showToast("📄 Đã nạp văn bản mẫu thành công!");
+      }
     }
-  }
-  if (data.estimated_key_len) {
-    chips += `<div class="meta-chip">📏 est. key len = <span>${data.estimated_key_len}</span></div>`;
-  }
-  chips += `</div>`;
 
-  rb.innerHTML = `
-    <div class="result-label">
-      <span>— RESULT —</span>
-      <button class="copy-btn" onclick="copyText('${id}')">Copy</button>
-    </div>
-    <div class="result-text" id="${id}">${escHtml(result)}</div>
-    ${chips}
-  `;
-}
+    // 4. Quick Paste from one result to another input
+    function pasteFromOther(resultBoxId, targetInputId) {
+      const resEl = document.querySelector(`#${resultBoxId} .result-output-text`);
+      const target = document.getElementById(targetInputId);
+      if (resEl && target) {
+        target.value = resEl.textContent.trim();
+        const cntId = targetInputId.replace('-text', '-cnt');
+        updateCharCount(targetInputId, cntId);
+        showToast("📋 Đã chuyển văn bản sang ô nhập liệu!");
+      } else {
+        showToast("⚠ Chưa có kết quả từ bước trước để lấy!");
+      }
+    }
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+    // 5. Toast Notification
+    function showToast(msg) {
+      const t = document.getElementById('app-toast');
+      if (t) {
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => { t.classList.remove('show'); }, 2200);
+      }
+    }
 
-function copyText(id) {
-  const txt = document.getElementById(id).textContent;
-  navigator.clipboard.writeText(txt).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = txt; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-  });
-}
+    // 6. Playfair 5x5 Matrix Visualizer
+    function renderPlayfairMatrix(keyInputId, gridContainerId) {
+      const keyInput = document.getElementById(keyInputId);
+      const grid = document.getElementById(gridContainerId);
+      if (!keyInput || !grid) return;
 
-// ═══════════════════════════════════════════════════════════
-//  LOAD EXPERIMENT STATS
-// ═══════════════════════════════════════════════════════════
-function pctClass(pct) {
-  const v = parseFloat(pct);
-  if (v >= 70) return 'pct-high';
-  if (v >= 40) return 'pct-mid';
-  return 'pct-low';
-}
+      const rawKey = keyInput.value.toUpperCase().replace(/[^A-Z]/g, '').replace(/J/g, 'I');
+      const alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+      const used = new Set();
+      const flat = [];
 
-async function loadStats() {
-  // Caesar
-  try {
-    const rows = await fetch('/api/results/caesar').then(r => r.json());
-    const tbl = document.getElementById('tbl-caesar');
-    tbl.innerHTML = `<tr><th>Độ dài L</th><th>Số lần</th><th>Thời gian (ms)</th><th>Tỷ lệ đúng</th></tr>`;
-    rows.forEach(r => {
-      const pct = r['Ti le pha dung (%)'];
-      tbl.innerHTML += `<tr>
-        <td>${r['Do dai L']}</td>
-        <td>${r['Lap N']}</td>
-        <td>${r['TB thoi gian (ms)']}</td>
-        <td class="${pctClass(pct)}">${pct}%</td>
-      </tr>`;
+      for (const ch of rawKey) {
+        if (!used.has(ch) && alphabet.includes(ch)) {
+          used.add(ch);
+          flat.push({ ch, isKey: true });
+        }
+      }
+
+      for (const ch of alphabet) {
+        if (!used.has(ch)) {
+          used.add(ch);
+          flat.push({ ch, isKey: false });
+        }
+      }
+
+      grid.innerHTML = '';
+      flat.forEach(item => {
+        const cell = document.createElement('div');
+        cell.className = 'matrix-cell' + (item.isKey ? ' key-cell' : '');
+        cell.textContent = item.ch;
+        grid.appendChild(cell);
+      });
+    }
+
+    // 7. Extract Payload
+    function getPayload(cipher, op) {
+      const p = {};
+      if (cipher === 'caesar') {
+        if (op === 'encrypt') {
+          p.text = document.getElementById('c-enc-text').value;
+          p.key = document.getElementById('c-enc-key').value;
+        } else if (op === 'decrypt') {
+          p.text = document.getElementById('c-dec-text').value;
+          p.key = document.getElementById('c-dec-key').value;
+        } else if (op === 'attack') {
+          p.text = document.getElementById('c-atk-text').value;
+        }
+      } else if (cipher === 'vigenere') {
+        if (op === 'encrypt') {
+          p.text = document.getElementById('v-enc-text').value;
+          p.key = document.getElementById('v-enc-key').value;
+        } else if (op === 'decrypt') {
+          p.text = document.getElementById('v-dec-text').value;
+          p.key = document.getElementById('v-dec-key').value;
+        } else if (op === 'attack') {
+          p.text = document.getElementById('v-atk-text').value;
+        }
+      } else if (cipher === 'playfair') {
+        if (op === 'encrypt') {
+          p.text = document.getElementById('p-enc-text').value;
+          p.key = document.getElementById('p-enc-key').value;
+        } else if (op === 'decrypt') {
+          p.text = document.getElementById('p-dec-text').value;
+          p.key = document.getElementById('p-dec-key').value;
+        } else if (op === 'attack') {
+          p.text = document.getElementById('p-atk-text').value;
+          p.iterations = parseInt(document.getElementById('sl-iter').value) || 3000;
+          p.restarts   = parseInt(document.getElementById('sl-rest').value) || 5;
+        }
+      }
+      return p;
+    }
+
+    // 8. Main Action Dispatcher
+    async function doAction(cipher, op) {
+      const rbId = `rb-${cipher}-${op}`;
+      const lbId = `lb-${cipher}-${op}`;
+      const rb = document.getElementById(rbId);
+      const lb = document.getElementById(lbId);
+      const payload = getPayload(cipher, op);
+
+      if (!payload.text || !payload.text.trim()) {
+        showToast("⚠ Vui lòng nhập văn bản trước khi thực hiện!");
+        return;
+      }
+
+      // Start loading
+      if (lb) lb.classList.add('active');
+      if (rb) {
+        rb.classList.remove('visible');
+        rb.innerHTML = '';
+      }
+
+      // Disable buttons on current card
+      const card = document.querySelector(`.card-${op}`);
+      const btn = card ? card.querySelector('.btn-submit') : null;
+      if (btn) btn.disabled = true;
+
+      try {
+        const response = await fetch(`/api/${cipher}/${op}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        if (lb) lb.classList.remove('active');
+        if (rb) rb.classList.add('visible');
+
+        if (data.error) {
+          rb.innerHTML = `
+            <div class="error-banner">
+              <span>⚠</span>
+              <div>${escapeHtml(data.error)}</div>
+            </div>
+          `;
+        } else {
+          renderResultBox(rb, data, cipher, op);
+        }
+      } catch (err) {
+        if (lb) lb.classList.remove('active');
+        if (rb) {
+          rb.classList.add('visible');
+          rb.innerHTML = `
+            <div class="error-banner">
+              <span>⚠</span>
+              <div>Lỗi kết nối máy chủ: ${escapeHtml(err.message)}</div>
+            </div>
+          `;
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    // 9. Render Result Box
+    function renderResultBox(container, data, cipher, op) {
+      const resultText = data.result || '';
+      const uniqueId = `res-${cipher}-${op}-${Date.now()}`;
+
+      // Build metadata pills
+      let metaHtml = `<div class="result-metadata-pills">`;
+      if (data.time_ms !== undefined) {
+        metaHtml += `<div class="meta-pill">⏱ Thời gian: <strong>${data.time_ms} ms</strong></div>`;
+      }
+      if (data.key !== undefined) {
+        const label = cipher === 'caesar' ? `Shift k = ${data.key}` : `Khóa: ${data.key}`;
+        metaHtml += `<div class="meta-pill">🔑 <strong>${escapeHtml(label)}</strong></div>`;
+      }
+      if (data.estimated_key_len !== undefined) {
+        metaHtml += `<div class="meta-pill">📏 Độ dài khóa ước lượng (IC): <strong>${data.estimated_key_len}</strong></div>`;
+      }
+      metaHtml += `</div>`;
+
+      container.innerHTML = `
+        <div class="result-top-bar">
+          <span class="result-heading">✨ Kết quả đầu ra</span>
+          <div class="result-actions">
+            <button class="btn-action-tiny" onclick="copyResultText('${uniqueId}')">
+              📋 Sao chép
+            </button>
+          </div>
+        </div>
+        <div class="result-output-text" id="${uniqueId}">${escapeHtml(resultText)}</div>
+        ${metaHtml}
+      `;
+    }
+
+    // 10. Copy Result
+    function copyResultText(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        const text = el.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("📋 Đã sao chép kết quả vào bộ nhớ tạm!");
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast("📋 Đã sao chép kết quả!");
+        });
+      }
+    }
+
+    // 11. Escape HTML Helper
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // 12. Percentage Badge Helper
+    function formatPctBadge(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return `<span>${val}</span>`;
+      let badgeClass = 'low';
+      if (num >= 80) badgeClass = 'high';
+      else if (num >= 40) badgeClass = 'mid';
+      return `<span class="pct-pill ${badgeClass}">${num.toFixed(1)}%</span>`;
+    }
+
+    // 13. Load Benchmark CSV Data
+    async function loadStats() {
+      // Caesar
+      try {
+        const res = await fetch('/api/results/caesar');
+        const rows = await res.json();
+        const tbl = document.getElementById('tbl-caesar');
+        if (tbl && rows && rows.length) {
+          let html = `<thead><tr>
+            <th>Độ dài văn bản (L)</th>
+            <th>Số lần lặp (N)</th>
+            <th>Thời gian TB (ms)</th>
+            <th>Tỷ lệ phá đúng</th>
+          </tr></thead><tbody>`;
+          rows.forEach(r => {
+            html += `<tr>
+              <td><strong>${r['Do dai L'] || r['L']} ký tự</strong></td>
+              <td>${r['Lap N'] || r['N']} lần</td>
+              <td>${r['TB thoi gian (ms)'] || r['Time (ms)']} ms</td>
+              <td>${formatPctBadge(r['Ti le pha dung (%)'] || r['Accuracy'])}</td>
+            </tr>`;
+          });
+          html += `</tbody>`;
+          tbl.innerHTML = html;
+        }
+      } catch(e) {}
+
+      // Vigenère
+      try {
+        const res = await fetch('/api/results/vigenere');
+        const rows = await res.json();
+        const tbl = document.getElementById('tbl-vigenere');
+        if (tbl && rows && rows.length) {
+          let html = `<thead><tr>
+            <th>Độ dài (L)</th>
+            <th>Độ dài khóa (Key Len)</th>
+            <th>Số lần lặp (N)</th>
+            <th>Thời gian TB (ms)</th>
+            <th>Tỷ lệ đúng Key</th>
+            <th>Độ chính xác Plaintext</th>
+          </tr></thead><tbody>`;
+          rows.forEach(r => {
+            html += `<tr>
+              <td><strong>${r['Do dai L']} ký tự</strong></td>
+              <td><span class="pct-pill mid">m = ${r['Key length']}</span></td>
+              <td>${r['Lap N']}</td>
+              <td>${r['TB thoi gian (ms)']} ms</td>
+              <td>${formatPctBadge(r['Ti le key dung (%)'])}</td>
+              <td>${formatPctBadge(r['Do chinh xac VB (%)'])}</td>
+            </tr>`;
+          });
+          html += `</tbody>`;
+          tbl.innerHTML = html;
+        }
+      } catch(e) {}
+
+      // Playfair
+      try {
+        const res = await fetch('/api/results/playfair');
+        const rows = await res.json();
+        const tbl = document.getElementById('tbl-playfair');
+        if (tbl && rows && rows.length) {
+          let html = `<thead><tr>
+            <th>Độ dài (L)</th>
+            <th>Số lần lặp (N)</th>
+            <th>Iterations</th>
+            <th>Restarts</th>
+            <th>Thời gian TB (ms)</th>
+            <th>Độ chính xác ký tự</th>
+          </tr></thead><tbody>`;
+          rows.forEach(r => {
+            html += `<tr>
+              <td><strong>${r['Do dai L']} ký tự</strong></td>
+              <td>${r['Lap N']}</td>
+              <td>${r['Iterations'] || '1500'}</td>
+              <td>${r['Restarts'] || '3'}</td>
+              <td>${r['TB thoi gian (ms)']} ms</td>
+              <td>${formatPctBadge(r['TB do chinh xac (%)'])}</td>
+            </tr>`;
+          });
+          html += `</tbody>`;
+          tbl.innerHTML = html;
+        }
+      } catch(e) {}
+    }
+
+    // 14. Initial setup on DOM Ready
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize matrix visualizers
+      renderPlayfairMatrix('p-enc-key', 'grid-enc');
+      renderPlayfairMatrix('p-dec-key', 'grid-dec');
+
+      // Initialize character counts
+      updateCharCount('c-enc-text', 'c-enc-cnt');
+      updateCharCount('c-dec-text', 'c-dec-cnt');
+      updateCharCount('c-atk-text', 'c-atk-cnt');
+      updateCharCount('v-enc-text', 'v-enc-cnt');
+      updateCharCount('p-enc-text', 'p-enc-cnt');
+
+      // Pre-load benchmark stats in background
+      loadStats();
+
+      // Uppercase sanitizers for key inputs
+      ['v-enc-key', 'v-dec-key', 'p-enc-key', 'p-dec-key'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', () => {
+            el.value = el.value.toUpperCase().replace(/[^A-Z]/g, '');
+          });
+        }
+      });
     });
-  } catch(e) {}
-
-  // Vigenère
-  try {
-    const rows = await fetch('/api/results/vigenere').then(r => r.json());
-    const tbl = document.getElementById('tbl-vigenere');
-    tbl.innerHTML = `<tr><th>Độ dài L</th><th>Key len</th><th>Thời gian (ms)</th><th>Key đúng</th><th>Chính xác VB</th></tr>`;
-    rows.forEach(r => {
-      const p1 = r['Ti le key dung (%)'];
-      const p2 = r['Do chinh xac VB (%)'];
-      tbl.innerHTML += `<tr>
-        <td>${r['Do dai L']}</td>
-        <td>${r['Key length']}</td>
-        <td>${r['TB thoi gian (ms)']}</td>
-        <td class="${pctClass(p1)}">${p1}%</td>
-        <td class="${pctClass(p2)}">${p2}%</td>
-      </tr>`;
-    });
-  } catch(e) {}
-
-  // Playfair
-  try {
-    const rows = await fetch('/api/results/playfair').then(r => r.json());
-    const tbl = document.getElementById('tbl-playfair');
-    tbl.innerHTML = `<tr><th>Độ dài L</th><th>Iterations</th><th>Restarts</th><th>Thời gian (ms)</th><th>Chính xác</th></tr>`;
-    rows.forEach(r => {
-      const p = r['TB do chinh xac (%)'];
-      tbl.innerHTML += `<tr>
-        <td>${r['Do dai L']}</td>
-        <td>${r['Iterations']}</td>
-        <td>${r['Restarts']}</td>
-        <td>${r['TB thoi gian (ms)']}</td>
-        <td class="${pctClass(p)}">${p}%</td>
-      </tr>`;
-    });
-  } catch(e) {}
-}
-
-// ═══════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  loadStats();
-
-  // Auto-uppercase key inputs
-  document.querySelectorAll('input[style*="text-transform:uppercase"]').forEach(el => {
-    el.addEventListener('input', () => { el.value = el.value.toUpperCase().replace(/[^A-Z]/g,''); });
-  });
-});
-</script>
+  </script>
 </body>
 </html>
